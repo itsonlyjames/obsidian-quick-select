@@ -1,8 +1,40 @@
-/*
+/* todo: style settings */
+.prompt-results {
+    counter-reset: suggestion-counter;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.suggestion-item.mod-complex:nth-child(-n+9) {
+    counter-increment: suggestion-counter;
+}
 
-If your plugin does not need CSS, delete this file.
+.suggestion-item.mod-complex:nth-child(-n+9)::after {
+    content: counter(suggestion-counter);
+    margin-left: 10px;
+    color: var(--text-color);
+    align-self: center;
+}
 
+.suggestion-item.mod-complex:nth-child(n+10)::after {
+    content: none;
+}
+
+/* 
+.suggestion-item.mod-complex:nth-child(-n+9) {
+    counter-increment: suggestion-counter;
+    position: relative;
+}
+
+.show-suggestion-numbers .suggestion-item.mod-complex:nth-child(-n+9)::after {
+    content: counter(suggestion-counter);
+    position: absolute;
+    right: -20px;
+    color: var(--text-color);
+    opacity: 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.show-suggestion-numbers .suggestion-item.mod-complex:nth-child(-n+9).show-suggestion-numbers::after {
+    right: 10px;
+    opacity: 1;
+}
 */

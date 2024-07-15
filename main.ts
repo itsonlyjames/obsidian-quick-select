@@ -1,134 +1,237 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, TFile } from "obsidian";
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
+interface Command {
+  id: string;
+  name: string;
+  callback: () => any;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+interface Commands {
+  commands: { [id: string]: Command };
+  executeCommandById(id: string): boolean;
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
-
-	async onload() {
-		await this.loadSettings();
-
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-	}
-
-	onunload() {
-
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+interface AppWithCommands extends App {
+  commands: Commands;
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
+export default class QuickOpen extends Plugin {
+  private originalSwitcherOpenCommand: (() => void) | null = null;
+  private originalCommandPaletteOpenCommand: (() => void) | null = null;
+  private keyPressListener: (event: KeyboardEvent) => void;
+  private keyReleaseListener: (event: KeyboardEvent) => void;
+  private observer: MutationObserver | null = null;
+  private results: { title: string; alias: string | null }[];
+  private isCommandPalette = false;
 
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
+  async onload() {
+    this.app.workspace.onLayoutReady(() => {
+      this.overrideSwitcherOpenCommand();
+      this.overrideCommandPaletteOpenCommand();
+    });
+  }
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
+  overrideSwitcherOpenCommand() {
+    const switcherOpenCommand =
+      (this.app as AppWithCommands).commands.commands["switcher:open"];
+    if (switcherOpenCommand && !this.originalSwitcherOpenCommand) {
+      this.originalSwitcherOpenCommand = switcherOpenCommand.callback;
+      switcherOpenCommand.callback = () => this.handleOpen("switcher");
+    }
+  }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+  overrideCommandPaletteOpenCommand() {
+    const commandPaletteOpenCommand =
+      (this.app as AppWithCommands).commands.commands["command-palette:open"];
+    if (commandPaletteOpenCommand && !this.originalCommandPaletteOpenCommand) {
+      this.originalCommandPaletteOpenCommand =
+        commandPaletteOpenCommand.callback;
+      commandPaletteOpenCommand.callback = () =>
+        this.handleOpen("command-palette");
+    }
+  }
 
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+  handleOpen(type: "switcher" | "command-palette") {
+    this.isCommandPalette = type === "command-palette";
+    if (this.isCommandPalette && this.originalCommandPaletteOpenCommand) {
+      this.originalCommandPaletteOpenCommand();
+    } else if (!this.isCommandPalette && this.originalSwitcherOpenCommand) {
+      this.originalSwitcherOpenCommand();
+    }
 
-	display(): void {
-		const {containerEl} = this;
+    this.returnResults();
 
-		containerEl.empty();
+    // Ensure observer is only set up once
+    if (!this.observer) {
+      this.setupObserver();
+    }
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
+    this.setupKeyListeners();
+
+    this.observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.removedNodes.length > 0) {
+          mutation.removedNodes.forEach((node) => {
+            if ((node as HTMLElement).classList?.contains("modal-container")) {
+              this.cleanup();
+            }
+          });
+        }
+      }
+    });
+    this.observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  returnResults() {
+    const results = this.getResults();
+    this.results = results;
+  }
+
+  setupObserver() {
+    const resultsContainer = document.querySelector(".prompt-results");
+    if (resultsContainer) {
+      const resultsObserver = new MutationObserver(() => {
+        this.returnResults();
+      });
+
+      resultsObserver.observe(resultsContainer, {
+        childList: true,
+        subtree: true,
+      });
+    }
+  }
+
+  setupKeyListeners() {
+    // Remove existing key listeners before adding new ones
+    this.cleanupKeyListeners();
+    this.keyPressListener = this.onKeyPress.bind(this);
+    this.keyReleaseListener = this.onKeyRelease.bind(this);
+    document.addEventListener("keydown", this.keyPressListener);
+    document.addEventListener("keyup", this.keyReleaseListener);
+  }
+
+  cleanupKeyListeners() {
+    if (this.keyPressListener) {
+      document.removeEventListener("keydown", this.keyPressListener);
+    }
+    if (this.keyReleaseListener) {
+      document.removeEventListener("keyup", this.keyReleaseListener);
+    }
+  }
+
+  getResults(): { title: string; alias: string | null }[] {
+    const resultItems = document.querySelectorAll(
+      ".prompt-results .suggestion-item",
+    );
+    return Array.from(resultItems).slice(0, 9).map((item) => {
+      const titleEl = item.querySelector(".suggestion-title") as HTMLElement;
+      if (!titleEl) return { title: "", alias: null };
+
+      const prefixEl = titleEl.querySelector(".suggestion-prefix");
+      const title = prefixEl
+        ? `${prefixEl.textContent?.trim() || ""}: ${
+          Array.from(titleEl.childNodes)
+            .filter((node) => node !== prefixEl)
+            .map((node) => node.textContent?.trim())
+            .join("")
+        }`
+        : titleEl.innerText.trim();
+
+      const aliasEl = item.querySelector(".suggestion-note") as HTMLElement;
+      const alias = aliasEl ? aliasEl.innerText.trim() : null;
+
+      if (alias) {
+        return { title: alias, alias: title };
+      } else {
+        return { title, alias: null };
+      }
+    }).filter((result) => result.title); // Remove any empty results
+  }
+
+  async onKeyPress(event: KeyboardEvent) {
+    if (event.metaKey || event.ctrlKey) {
+      document.body.classList.add("show-suggestion-numbers");
+    }
+
+    if (event.getModifierState("Control") || event.getModifierState("Meta")) {
+      if (event.key >= "1" && event.key <= "9") {
+        const resultsIndex: number = parseInt(event.key) - 1;
+        const result = this.results[resultsIndex];
+        if (!result) return;
+
+        if (this.isCommandPalette) {
+          this.executeCommand(result.title);
+        } else {
+          // Use the alias if it exists, otherwise use the title
+          const searchKey = result.title;
+          const file = this.app.metadataCache.getFirstLinkpathDest(
+            searchKey,
+            "",
+          );
+          if (file) this.openFileByPath(file);
+        }
+      }
+    }
+  }
+
+  onKeyRelease(event: KeyboardEvent) {
+    if (!event.metaKey && !event.ctrlKey) {
+      document.body.classList.remove("show-suggestion-numbers");
+    }
+  }
+
+  async openFileByPath(file: TFile | null) {
+    if (file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf();
+      await leaf.openFile(file);
+      this.closePalette();
+    }
+  }
+
+  executeCommand(commandName: string) {
+    const command = Object.values(
+      (this.app as AppWithCommands).commands.commands,
+    ).find((cmd) => cmd.name === commandName);
+    if (command) {
+      (this.app as AppWithCommands).commands.executeCommandById(command.id);
+      this.closePalette();
+    }
+  }
+
+  closePalette() {
+    const event = new KeyboardEvent("keydown", {
+      key: "Escape",
+      code: "Escape",
+      keyCode: 27,
+      which: 27,
+    });
+    document.dispatchEvent(event);
+  }
+
+  cleanup() {
+    this.cleanupKeyListeners();
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+  }
+
+  onunload() {
+    const switcherOpenCommand =
+      (this.app as AppWithCommands).commands.commands["switcher:open"];
+    if (switcherOpenCommand && this.originalSwitcherOpenCommand) {
+      switcherOpenCommand.callback = this.originalSwitcherOpenCommand;
+      this.originalSwitcherOpenCommand = null;
+    }
+
+    const commandPaletteOpenCommand =
+      (this.app as AppWithCommands).commands.commands["command-palette:open"];
+    if (commandPaletteOpenCommand && this.originalCommandPaletteOpenCommand) {
+      commandPaletteOpenCommand.callback =
+        this.originalCommandPaletteOpenCommand;
+      this.originalCommandPaletteOpenCommand = null;
+    }
+
+    this.cleanup();
+  }
 }
