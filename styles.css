@@ -29,3 +29,8 @@
 .quick-open-modal-active .suggestion-item:nth-child(n+10)::after {
     content: none;
 }
+
+.quick-open-modal-active .suggestion-item>div.callout {
+    width: 100%;
+    mix-blend-mode: normal;
+}
