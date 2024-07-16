@@ -1,40 +1,31 @@
-/* todo: style settings */
-.prompt-results {
+.quick-open-modal-active .prompt-results {
     counter-reset: suggestion-counter;
 }
 
-.suggestion-item.mod-complex:nth-child(-n+9) {
+.quick-open-modal-active .suggestion-item {
+    display: flex;
+    justify-content: start;
+}
+
+.quick-open-modal-active .suggestion-item:nth-child(-n+9) {
     counter-increment: suggestion-counter;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
 }
 
-.suggestion-item.mod-complex:nth-child(-n+9)::after {
+.quick-open-modal-active .suggestion-item .suggestion-content {
+    width: 100%;
+}
+
+.quick-open-modal-active .suggestion-item:nth-child(-n+9)::after {
     content: counter(suggestion-counter);
-    margin-left: 10px;
-    color: var(--text-color);
-    align-self: center;
+    color: var(--text-muted);
+    font-size: 0.8em;
+    padding-left: 10px;
+    margin-left: auto;
 }
 
-.suggestion-item.mod-complex:nth-child(n+10)::after {
+.quick-open-modal-active .suggestion-item:nth-child(n+10)::after {
     content: none;
 }
-
-/* 
-.suggestion-item.mod-complex:nth-child(-n+9) {
-    counter-increment: suggestion-counter;
-    position: relative;
-}
-
-.show-suggestion-numbers .suggestion-item.mod-complex:nth-child(-n+9)::after {
-    content: counter(suggestion-counter);
-    position: absolute;
-    right: -20px;
-    color: var(--text-color);
-    opacity: 0;
-    transition: all 0.2s ease-in-out;
-}
-
-.show-suggestion-numbers .suggestion-item.mod-complex:nth-child(-n+9).show-suggestion-numbers::after {
-    right: 10px;
-    opacity: 1;
-}
-*/

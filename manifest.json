@@ -3,9 +3,10 @@
   "name": "Quick Open",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "Allows the use of meta key plus number to open nth file in quick switcher and execute nth command in command palette",
+  "description": "Quickly open items in modals using keyboard shortcuts",
   "author": "James Alexandre",
   "authorUrl": "https://github.com/itsonlyjames",
   "fundingUrl": "",
-  "isDesktopOnly": true
+  "isDesktopOnly": true,
+  "css": ["styles.css"]
 }
