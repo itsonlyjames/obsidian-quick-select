@@ -1,10 +1,11 @@
-import { Plugin } from "obsidian";
+import { Plugin, WorkspaceLeaf } from "obsidian";
 
 export default class QuickOpen extends Plugin {
   private modalObserver: MutationObserver;
   private resultsObserver: MutationObserver;
   private activeModal: HTMLElement | null = null;
   private results: { title: string; element: HTMLElement }[] = [];
+  private popoutWindows: Set<Window> = new Set();
 
   async onload() {
     this.modalObserver = new MutationObserver(
@@ -26,10 +27,52 @@ export default class QuickOpen extends Plugin {
       ),
     );
 
+    this.registerEvent(
+      this.app.workspace.on(
+        "layout-change",
+        this.handleLayoutChange.bind(this),
+      ),
+    );
+
     document.addEventListener("keydown", this.handleKeyPress.bind(this));
 
     // Check if a modal is already active when the plugin loads
     this.checkForActiveModal();
+  }
+
+  handleLayoutChange() {
+    this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
+      const viewState = leaf.getViewState();
+      if (["markdown", "image"].includes(viewState?.type)) {
+        const bodyEl = leaf.view.containerEl.closest("body");
+        if (bodyEl?.classList.contains("is-popout-window")) {
+          const win = bodyEl.ownerDocument.defaultView;
+          if (win && !this.popoutWindows.has(win)) {
+            this.initializePopoutWindow(win);
+          }
+        }
+      }
+    });
+  }
+
+  initializePopoutWindow(win: Window) {
+    this.popoutWindows.add(win);
+
+    const popoutModalObserver = new MutationObserver(
+      this.handleDOMMutation.bind(this),
+    );
+    popoutModalObserver.observe(win.document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    win.addEventListener("keydown", this.handleKeyPress.bind(this));
+
+    this.register(() => {
+      popoutModalObserver.disconnect();
+      win.removeEventListener("keydown", this.handleKeyPress.bind(this));
+      this.popoutWindows.delete(win);
+    });
   }
 
   handleDOMMutation(mutations: MutationRecord[]) {
@@ -59,7 +102,7 @@ export default class QuickOpen extends Plugin {
     if (resultsContainer) {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
-      this.addModalStyles();
+      this.addModalStyles(modalElement.ownerDocument);
     }
   }
 
@@ -67,7 +110,7 @@ export default class QuickOpen extends Plugin {
     if (this.activeModal === modalElement) {
       this.activeModal = null;
       this.results = [];
-      this.removeModalStyles();
+      this.removeModalStyles(modalElement.ownerDocument);
       this.resultsObserver.disconnect();
     }
   }
@@ -97,7 +140,7 @@ export default class QuickOpen extends Plugin {
       title: item.textContent || `Result ${index + 1}`,
       element: item as HTMLElement,
     }));
-    this.addModalStyles();
+    this.addModalStyles(resultsContainer.ownerDocument);
   }
 
   handleKeyPress(event: KeyboardEvent) {
@@ -115,18 +158,22 @@ export default class QuickOpen extends Plugin {
   handleQuickPreview() {
     if (this.activeModal) {
       // Ensure styles are added only once
-      if (!document.body.classList.contains("quick-open-modal-active")) {
-        this.addModalStyles();
+      if (
+        !this.activeModal.ownerDocument.body.classList.contains(
+          "quick-open-modal-active",
+        )
+      ) {
+        this.addModalStyles(this.activeModal.ownerDocument);
       }
     }
   }
 
-  addModalStyles() {
-    document.body.classList.add("quick-open-modal-active");
+  addModalStyles(doc: Document) {
+    doc.body.classList.add("quick-open-modal-active");
   }
 
-  removeModalStyles() {
-    document.body.classList.remove("quick-open-modal-active");
+  removeModalStyles(doc: Document) {
+    doc.body.classList.remove("quick-open-modal-active");
   }
 
   checkForActiveModal() {
@@ -140,6 +187,12 @@ export default class QuickOpen extends Plugin {
     this.modalObserver.disconnect();
     this.resultsObserver.disconnect();
     document.removeEventListener("keydown", this.handleKeyPress);
-    this.removeModalStyles();
+    this.removeModalStyles(document);
+
+    // Clean up for popout windows
+    this.popoutWindows.forEach((win) => {
+      win.removeEventListener("keydown", this.handleKeyPress);
+      this.removeModalStyles(win.document);
+    });
   }
 }
