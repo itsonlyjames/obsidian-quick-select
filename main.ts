@@ -42,14 +42,11 @@ export default class QuickOpen extends Plugin {
 
   handleLayoutChange() {
     this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
-      const viewState = leaf.getViewState();
-      if (["markdown", "image"].includes(viewState?.type)) {
-        const bodyEl = leaf.view.containerEl.closest("body");
-        if (bodyEl?.classList.contains("is-popout-window")) {
-          const win = bodyEl.ownerDocument.defaultView;
-          if (win && !this.popoutWindows.has(win)) {
-            this.initializePopoutWindow(win);
-          }
+      const bodyEl = leaf.view.containerEl.closest("body");
+      if (bodyEl?.classList.contains("is-popout-window")) {
+        const win = bodyEl.ownerDocument.defaultView;
+        if (win && !this.popoutWindows.has(win)) {
+          this.initializePopoutWindow(win);
         }
       }
     });
