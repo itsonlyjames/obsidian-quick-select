@@ -6,6 +6,9 @@
   "description": "Quickly open items in modals using keyboard shortcuts",
   "author": "James Alexandre",
   "authorUrl": "https://github.com/itsonlyjames",
+  "fundingUrl": {
+    "GitHub Sponsor": "https://github.com/sponsors/itsonlyjames"
+  },
   "isDesktopOnly": true,
   "css": ["styles.css"]
 }
