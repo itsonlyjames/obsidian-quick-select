@@ -1,7 +1,7 @@
 {
   "id": "quick-open",
   "name": "Quick Open",
-  "version": "v1.0.0",
+  "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "Quickly open items in modals using keyboard shortcuts",
   "author": "James Alexandre",
