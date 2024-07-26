@@ -9,6 +9,5 @@
   "fundingUrl": {
     "GitHub Sponsor": "https://github.com/sponsors/itsonlyjames"
   },
-  "isDesktopOnly": true,
-  "css": ["styles.css"]
+  "isDesktopOnly": true
 }
