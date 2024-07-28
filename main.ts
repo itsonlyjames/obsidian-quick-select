@@ -65,10 +65,27 @@ export default class QuickOpen extends Plugin {
 
     win.addEventListener("keydown", this.handleKeyPress.bind(this));
 
+    // Set the stacked tabs for the popout window
+    this.setStackedTabsForPopoutWindow(win);
+
     this.register(() => {
       popoutModalObserver.disconnect();
       win.removeEventListener("keydown", this.handleKeyPress.bind(this));
       this.popoutWindows.delete(win);
+    });
+  }
+
+  setStackedTabsForPopoutWindow(win: Window) {
+    const newWorkspace = win.app.workspace;
+
+    // Wait for the layout to be ready
+    newWorkspace.onLayoutReady(() => {
+      // Ensure we target the floating split of the new workspace
+      if (newWorkspace.floatingSplit) {
+        newWorkspace.floatingSplit.children.forEach((split) => {
+          split.children[0].setStacked(true);
+        });
+      }
     });
   }
 
