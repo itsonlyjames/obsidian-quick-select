@@ -65,8 +65,8 @@ export default class QuickOpen extends Plugin {
       const bodyEl = leaf.view.containerEl.closest("body");
       if (bodyEl?.classList.contains("is-popout-window")) {
         const win = bodyEl.ownerDocument.defaultView;
-        if (win && !this.popoutWindows.has(win)) {
-          this.initializePopoutWindow(win);
+        if (win && !this.popoutWindows.has(win as AppWindow)) {
+          this.initializePopoutWindow(win as AppWindow);
         }
       }
     });
@@ -98,12 +98,12 @@ export default class QuickOpen extends Plugin {
   }
 
   setStackedTabsForPopoutWindow(workspace: Workspace) {
-    const newWorkspace = workspace as ExtendedWorkspace;
+    const extendedWorkspace = workspace as ExtendedWorkspace;
     // Wait for the layout to be ready
-    newWorkspace.onLayoutReady(() => {
+    extendedWorkspace.onLayoutReady(() => {
       // Ensure we target the floating split of the new workspace
-      if (newWorkspace.floatingSplit) {
-        newWorkspace.floatingSplit.children.forEach(
+      if (extendedWorkspace.floatingSplit) {
+        extendedWorkspace.floatingSplit.children.forEach(
           (split) => {
             split.children[0].setStacked(true);
           },
