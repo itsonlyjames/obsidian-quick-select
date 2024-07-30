@@ -64,12 +64,18 @@ export default class QuickOpen extends Plugin {
     this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
       const bodyEl = leaf.view.containerEl.closest("body");
       if (bodyEl?.classList.contains("is-popout-window")) {
-        const win = bodyEl.ownerDocument.defaultView;
-        if (win && !this.popoutWindows.has(win as AppWindow)) {
-          this.initializePopoutWindow(win as AppWindow);
+        const win = bodyEl.ownerDocument.defaultView as
+          | (Window & typeof globalThis)
+          | null;
+        if (win && this.isAppWindow(win) && !this.popoutWindows.has(win)) {
+          this.initializePopoutWindow(win);
         }
       }
     });
+  }
+
+  isAppWindow(win: Window): win is AppWindow {
+    return "app" in win && "workspace" in (win as any).app;
   }
 
   initializePopoutWindow(win: AppWindow) {
