@@ -1,4 +1,10 @@
-import { Plugin, WorkspaceLeaf } from "obsidian";
+import { Plugin, Workspace, WorkspaceLeaf } from "obsidian";
+import type { AppWindow, ExtendedWorkspace } from "./types";
+import {
+  DEFAULT_SETTINGS,
+  QuickOpenSettings,
+  QuickOpenSettingTab,
+} from "./settings";
 
 export default class QuickOpen extends Plugin {
   private modalObserver: MutationObserver;
@@ -6,11 +12,17 @@ export default class QuickOpen extends Plugin {
   private activeModal: HTMLElement | null = null;
   private results: { title: string; element: HTMLElement }[] = [];
   private popoutWindows: Set<Window> = new Set();
+  public settings: QuickOpenSettings;
 
   async onload() {
+    await this.loadSettings();
+
+    this.addSettingTab(new QuickOpenSettingTab(this.app, this));
+
     this.modalObserver = new MutationObserver(
       this.handleDOMMutation.bind(this),
     );
+
     this.modalObserver.observe(document.body, {
       childList: true,
       subtree: true,
@@ -40,6 +52,14 @@ export default class QuickOpen extends Plugin {
     this.checkForActiveModal();
   }
 
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
   handleLayoutChange() {
     this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
       const bodyEl = leaf.view.containerEl.closest("body");
@@ -52,7 +72,7 @@ export default class QuickOpen extends Plugin {
     });
   }
 
-  initializePopoutWindow(win: Window) {
+  initializePopoutWindow(win: AppWindow) {
     this.popoutWindows.add(win);
 
     const popoutModalObserver = new MutationObserver(
@@ -65,10 +85,30 @@ export default class QuickOpen extends Plugin {
 
     win.addEventListener("keydown", this.handleKeyPress.bind(this));
 
+    // Set the stacked tabs for the popout window
+    if (this.settings.stackTabsInPopout) {
+      this.setStackedTabsForPopoutWindow(win.app.workspace);
+    }
+
     this.register(() => {
       popoutModalObserver.disconnect();
       win.removeEventListener("keydown", this.handleKeyPress.bind(this));
       this.popoutWindows.delete(win);
+    });
+  }
+
+  setStackedTabsForPopoutWindow(workspace: Workspace) {
+    const newWorkspace = workspace as ExtendedWorkspace;
+    // Wait for the layout to be ready
+    newWorkspace.onLayoutReady(() => {
+      // Ensure we target the floating split of the new workspace
+      if (newWorkspace.floatingSplit) {
+        newWorkspace.floatingSplit.children.forEach(
+          (split) => {
+            split.children[0].setStacked(true);
+          },
+        );
+      }
     });
   }
 
