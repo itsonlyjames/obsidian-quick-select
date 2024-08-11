@@ -121,11 +121,13 @@ export default class QuickOpen extends Plugin {
   handleDOMMutation(mutations: MutationRecord[]) {
     for (const mutation of mutations) {
       mutation.addedNodes.forEach((node) => {
-        if (
-          node instanceof HTMLElement &&
-          node.classList.contains("modal-container")
-        ) {
-          this.handleNewModal(node);
+        if (node instanceof HTMLElement) {
+          if (
+            node.classList.contains("modal-container") ||
+            node.classList.contains("suggestion-container")
+          ) {
+            this.handleNewModal(node);
+          }
         }
       });
 
@@ -141,7 +143,9 @@ export default class QuickOpen extends Plugin {
   }
 
   handleNewModal(modalElement: HTMLElement) {
-    const resultsContainer = modalElement.querySelector(".prompt-results");
+    const resultsContainer = modalElement.querySelector(
+      ".suggestion, .prompt-results",
+    );
     if (resultsContainer) {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
@@ -169,7 +173,7 @@ export default class QuickOpen extends Plugin {
   handleResultsMutation() {
     if (this.activeModal) {
       const resultsContainer = this.activeModal.querySelector(
-        ".prompt-results",
+        ".suggestion, .prompt-results",
       );
       if (resultsContainer) {
         this.updateResults(resultsContainer);
@@ -187,6 +191,7 @@ export default class QuickOpen extends Plugin {
   }
 
   handleKeyPress(event: KeyboardEvent) {
+    // for some reason both metaKey and number don't work in slash suggestor
     if (
       (event.metaKey || event.ctrlKey) && event.key >= "1" && event.key <= "9"
     ) {
@@ -220,7 +225,9 @@ export default class QuickOpen extends Plugin {
   }
 
   checkForActiveModal() {
-    const modalElement = document.querySelector(".modal-container");
+    const modalElement = document.querySelector(
+      ".modal-container, .suggestion-container",
+    );
     if (modalElement instanceof HTMLElement) {
       this.handleNewModal(modalElement);
     }
