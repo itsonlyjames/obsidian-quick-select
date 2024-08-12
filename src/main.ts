@@ -46,7 +46,11 @@ export default class QuickOpen extends Plugin {
       ),
     );
 
-    document.addEventListener("keydown", this.handleKeyPress.bind(this));
+    document.addEventListener(
+      "keydown",
+      this.handleKeyPress.bind(this),
+      true,
+    );
 
     // Check if a modal is already active when the plugin loads
     this.checkForActiveModal();
@@ -133,10 +137,14 @@ export default class QuickOpen extends Plugin {
 
       mutation.removedNodes.forEach((node) => {
         if (
-          node instanceof HTMLElement &&
-          node.classList.contains("modal-container")
+          node instanceof HTMLElement
         ) {
-          this.handleModalClosed(node);
+          if (
+            node.classList.contains("modal-container") ||
+            node.classList.contains("suggestion-container")
+          ) {
+            this.handleModalClosed(node);
+          }
         }
       });
     }
@@ -159,6 +167,11 @@ export default class QuickOpen extends Plugin {
       this.results = [];
       this.removeModalStyles(modalElement.ownerDocument);
       this.resultsObserver.disconnect();
+      document.removeEventListener(
+        "keydown",
+        this.handleKeyPress.bind(this),
+        true,
+      );
     }
   }
 
@@ -191,9 +204,11 @@ export default class QuickOpen extends Plugin {
   }
 
   handleKeyPress(event: KeyboardEvent) {
-    // for some reason both metaKey and number don't work in slash suggestor
+    // need to look into app.hotkeyManager to override default
+    // tab switching command for quick open
     if (
-      (event.metaKey || event.ctrlKey) && event.key >= "1" && event.key <= "9"
+      this.activeModal && (event.metaKey || event.ctrlKey) &&
+      event.key >= "1" && event.key <= "9"
     ) {
       const index = parseInt(event.key) - 1;
       if (this.results[index]) {
