@@ -4,6 +4,11 @@ interface ExtendedWorkspace extends Workspace {
   floatingSplit: {
     children: {
       children: {
+        children: {
+          view: {
+            getViewType: () => string;
+          };
+        }[];
         setStacked: (isStacked: boolean) => void;
       }[];
     }[];

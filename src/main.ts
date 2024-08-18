@@ -110,7 +110,10 @@ export default class QuickOpen extends Plugin {
       // Ensure we target the floating split of the new workspace
       if (extendedWorkspace.floatingSplit) {
         extendedWorkspace.floatingSplit.children.forEach((split) => {
-          split.children[0].setStacked(true);
+          split.children.forEach((leaf) => {
+            const type = leaf.children[0].view.getViewType();
+            if (type !== "outline") leaf.setStacked(true);
+          });
         });
       }
     });
