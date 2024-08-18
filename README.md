@@ -1,19 +1,30 @@
+<div style="text-align:center;">
+
 [![.github/workflows/release.yml](https://github.com/itsonlyjames/obsidian-quick-open/actions/workflows/release.yml/badge.svg)](https://github.com/itsonlyjames/obsidian-quick-open/actions/workflows/release.yml)
 
----
+<h1>Obsidian Quick Open</h1>
 
-<h1 align="center">Obsidian Quick Open</h1>
+</div>
 
-<p align="center">Open the quick switcher and press <code>cmd + number</code> to quickly open that file</p>
-<p align="center">Open the command palette and press <code>cmd + number</code> to quickly execute that command</p>
+<p style="text-align:center;">Open the <strong>quick switcher</strong> and press <code>cmd + number</code> to quickly open that file.</p>
+<p style="text-align:center;">Open the <strong>command palette</strong> and press <code>cmd + number</code> to quickly execute that command.</p>
+<p style="text-align:center;">Open the <strong>slash command</strong> and press <code>cmd + number</code> to quickly execute that command.</p>
+
+<h2>Supercharge Your Workflow!</h2>
 
 ![Supercharge your workflow](docs/supercharge-your-workflow.gif)
 
-Quick open works in most modals, including Workspaces, Keyshots, etc.
+Quick open works in the quick switcher, command palette (including all subsequent modals), as well as the slash command!
 
-I wish to add this functionality to the inline modals also. 
+<h3>Hot Swap Workspaces</h3>
 
-More to come...
+![Supercharge your workflow—Workspaces](docs/supercharge-your-workflow-workspaces.gif)
+
+<h3>Increase Inline Productivity</h3>
+
+![Supercharge your slash commands](docs/supercharge-your-slash-commands.gif)
+
+And much more...
 
 ---
 

@@ -32,7 +32,7 @@ export class QuickOpenSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.stackTabsInPopout = value;
             await this.plugin.saveSettings();
-          })
+          }),
       );
   }
 }

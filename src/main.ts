@@ -46,7 +46,7 @@ export default class QuickOpen extends Plugin {
       ),
     );
 
-    document.addEventListener("keydown", this.handleKeyPress.bind(this));
+    document.addEventListener("keydown", this.handleKeyPress.bind(this), true);
 
     // Check if a modal is already active when the plugin loads
     this.checkForActiveModal();
@@ -109,14 +109,12 @@ export default class QuickOpen extends Plugin {
     extendedWorkspace.onLayoutReady(() => {
       // Ensure we target the floating split of the new workspace
       if (extendedWorkspace.floatingSplit) {
-        extendedWorkspace.floatingSplit.children.forEach(
-          (split) => {
-            split.children.forEach((leaf) => {
-              const type = leaf.children[0].view.getViewType();
-              if (type !== "outline") leaf.setStacked(true);
-            });
-          },
-        );
+        extendedWorkspace.floatingSplit.children.forEach((split) => {
+          split.children.forEach((leaf) => {
+            const type = leaf.children[0].view.getViewType();
+            if (type !== "outline") leaf.setStacked(true);
+          });
+        });
       }
     });
   }
@@ -124,32 +122,57 @@ export default class QuickOpen extends Plugin {
   handleDOMMutation(mutations: MutationRecord[]) {
     for (const mutation of mutations) {
       mutation.addedNodes.forEach((node) => {
-        if (
-          node instanceof HTMLElement &&
-          node.classList.contains("modal-container")
-        ) {
-          this.handleNewModal(node);
+        if (node instanceof HTMLElement) {
+          if (
+            node.classList.contains("modal-container") ||
+            node.classList.contains("suggestion-container")
+          ) {
+            this.handleNewModal(node);
+          }
         }
       });
 
       mutation.removedNodes.forEach((node) => {
-        if (
-          node instanceof HTMLElement &&
-          node.classList.contains("modal-container")
-        ) {
-          this.handleModalClosed(node);
+        if (node instanceof HTMLElement) {
+          if (
+            node.classList.contains("modal-container") ||
+            node.classList.contains("suggestion-container")
+          ) {
+            this.handleModalClosed(node);
+          }
         }
       });
     }
   }
 
   handleNewModal(modalElement: HTMLElement) {
-    const resultsContainer = modalElement.querySelector(".prompt-results");
+    const resultsContainer = modalElement.querySelector(
+      ".suggestion, .prompt-results",
+    );
     if (resultsContainer) {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
       this.addModalStyles(modalElement.ownerDocument);
+      this.disableDefaultHotkeys();
     }
+  }
+
+  private originalHotkeys: { [key: string]: any } = {};
+
+  private disableDefaultHotkeys() {
+    const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
+
+    for (let i = 1; i < 9; i++) {
+      const hotkeyId = `workspace:goto-tab-${i}`;
+      this.originalHotkeys[hotkeyId] =
+        hotkeyManager.getDefaultHotkeys(hotkeyId);
+      hotkeyManager.removeDefaultHotkeys(hotkeyId);
+    }
+
+    const lastTabHotkeyId = "workspace:goto-last-tab";
+    this.originalHotkeys[lastTabHotkeyId] =
+      hotkeyManager.getDefaultHotkeys(lastTabHotkeyId);
+    hotkeyManager.removeDefaultHotkeys(lastTabHotkeyId);
   }
 
   handleModalClosed(modalElement: HTMLElement) {
@@ -158,7 +181,25 @@ export default class QuickOpen extends Plugin {
       this.results = [];
       this.removeModalStyles(modalElement.ownerDocument);
       this.resultsObserver.disconnect();
+      this.restoreDefaultHotkeys();
+      document.removeEventListener(
+        "keydown",
+        this.handleKeyPress.bind(this),
+        true,
+      );
     }
+  }
+
+  private restoreDefaultHotkeys() {
+    const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
+
+    for (const [hotkeyId, hotkeys] of Object.entries(this.originalHotkeys)) {
+      hotkeyManager.addDefaultHotkeys(hotkeyId, hotkeys);
+    }
+
+    hotkeyManager.bake();
+
+    this.originalHotkeys = {};
   }
 
   injectFunctionality(resultsContainer: Element) {
@@ -172,7 +213,7 @@ export default class QuickOpen extends Plugin {
   handleResultsMutation() {
     if (this.activeModal) {
       const resultsContainer = this.activeModal.querySelector(
-        ".prompt-results",
+        ".suggestion, .prompt-results",
       );
       if (resultsContainer) {
         this.updateResults(resultsContainer);
@@ -182,16 +223,23 @@ export default class QuickOpen extends Plugin {
 
   updateResults(resultsContainer: Element) {
     const items = resultsContainer.querySelectorAll(".suggestion-item");
-    this.results = Array.from(items).slice(0, 9).map((item, index) => ({
-      title: item.textContent || `Result ${index + 1}`,
-      element: item as HTMLElement,
-    }));
+    this.results = Array.from(items)
+      .slice(0, 9)
+      .map((item, index) => ({
+        title: item.textContent || `Result ${index + 1}`,
+        element: item as HTMLElement,
+      }));
     this.addModalStyles(resultsContainer.ownerDocument);
   }
 
   handleKeyPress(event: KeyboardEvent) {
+    // need to look into app.hotkeyManager to override default
+    // tab switching command for quick open
     if (
-      (event.metaKey || event.ctrlKey) && event.key >= "1" && event.key <= "9"
+      this.activeModal &&
+      (event.metaKey || event.ctrlKey) &&
+      event.key >= "1" &&
+      event.key <= "9"
     ) {
       const index = parseInt(event.key) - 1;
       if (this.results[index]) {
@@ -223,7 +271,9 @@ export default class QuickOpen extends Plugin {
   }
 
   checkForActiveModal() {
-    const modalElement = document.querySelector(".modal-container");
+    const modalElement = document.querySelector(
+      ".modal-container, .suggestion-container",
+    );
     if (modalElement instanceof HTMLElement) {
       this.handleNewModal(modalElement);
     }
