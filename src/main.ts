@@ -150,7 +150,26 @@ export default class QuickOpen extends Plugin {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
       this.addModalStyles(modalElement.ownerDocument);
+      this.disableDefaultHotkeys();
     }
+  }
+
+  private originalHotkeys: { [key: string]: any } = {};
+
+  private disableDefaultHotkeys() {
+    const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
+
+    for (let i = 1; i < 9; i++) {
+      const hotkeyId = `workspace:goto-tab-${i}`;
+      this.originalHotkeys[hotkeyId] =
+        hotkeyManager.getDefaultHotkeys(hotkeyId);
+      hotkeyManager.removeDefaultHotkeys(hotkeyId);
+    }
+
+    const lastTabHotkeyId = "workspace:goto-last-tab";
+    this.originalHotkeys[lastTabHotkeyId] =
+      hotkeyManager.getDefaultHotkeys(lastTabHotkeyId);
+    hotkeyManager.removeDefaultHotkeys(lastTabHotkeyId);
   }
 
   handleModalClosed(modalElement: HTMLElement) {
@@ -159,12 +178,25 @@ export default class QuickOpen extends Plugin {
       this.results = [];
       this.removeModalStyles(modalElement.ownerDocument);
       this.resultsObserver.disconnect();
+      this.restoreDefaultHotkeys();
       document.removeEventListener(
         "keydown",
         this.handleKeyPress.bind(this),
         true,
       );
     }
+  }
+
+  private restoreDefaultHotkeys() {
+    const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
+
+    for (const [hotkeyId, hotkeys] of Object.entries(this.originalHotkeys)) {
+      hotkeyManager.addDefaultHotkeys(hotkeyId, hotkeys);
+    }
+
+    hotkeyManager.bake();
+
+    this.originalHotkeys = {};
   }
 
   injectFunctionality(resultsContainer: Element) {
