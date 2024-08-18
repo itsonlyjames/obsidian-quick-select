@@ -1,4 +1,4 @@
-import { Workspace } from "obsidian";
+import { App, Hotkey, Workspace } from "obsidian";
 
 interface ExtendedWorkspace extends Workspace {
   floatingSplit: {
@@ -14,4 +14,19 @@ interface AppWindow extends Window {
   app: {
     workspace: Workspace;
   };
+}
+
+declare module "obsidian" {
+  interface App {
+    internalPlugins: {
+      app: {
+        hotkeyManager: {
+          getDefaultHotkeys: (hotkeyId: string) => Hotkey;
+          removeDefaultHotkeys: (hotkeyId: string) => void;
+          addDefaultHotkeys: (hotkeyId: string, hotkeys: Hotkey) => void;
+          bake: () => void;
+        };
+      };
+    };
+  }
 }
