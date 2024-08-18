@@ -46,11 +46,7 @@ export default class QuickOpen extends Plugin {
       ),
     );
 
-    document.addEventListener(
-      "keydown",
-      this.handleKeyPress.bind(this),
-      true,
-    );
+    document.addEventListener("keydown", this.handleKeyPress.bind(this), true);
 
     // Check if a modal is already active when the plugin loads
     this.checkForActiveModal();
@@ -113,11 +109,9 @@ export default class QuickOpen extends Plugin {
     extendedWorkspace.onLayoutReady(() => {
       // Ensure we target the floating split of the new workspace
       if (extendedWorkspace.floatingSplit) {
-        extendedWorkspace.floatingSplit.children.forEach(
-          (split) => {
-            split.children[0].setStacked(true);
-          },
-        );
+        extendedWorkspace.floatingSplit.children.forEach((split) => {
+          split.children[0].setStacked(true);
+        });
       }
     });
   }
@@ -136,9 +130,7 @@ export default class QuickOpen extends Plugin {
       });
 
       mutation.removedNodes.forEach((node) => {
-        if (
-          node instanceof HTMLElement
-        ) {
+        if (node instanceof HTMLElement) {
           if (
             node.classList.contains("modal-container") ||
             node.classList.contains("suggestion-container")
@@ -196,10 +188,12 @@ export default class QuickOpen extends Plugin {
 
   updateResults(resultsContainer: Element) {
     const items = resultsContainer.querySelectorAll(".suggestion-item");
-    this.results = Array.from(items).slice(0, 9).map((item, index) => ({
-      title: item.textContent || `Result ${index + 1}`,
-      element: item as HTMLElement,
-    }));
+    this.results = Array.from(items)
+      .slice(0, 9)
+      .map((item, index) => ({
+        title: item.textContent || `Result ${index + 1}`,
+        element: item as HTMLElement,
+      }));
     this.addModalStyles(resultsContainer.ownerDocument);
   }
 
@@ -207,8 +201,10 @@ export default class QuickOpen extends Plugin {
     // need to look into app.hotkeyManager to override default
     // tab switching command for quick open
     if (
-      this.activeModal && (event.metaKey || event.ctrlKey) &&
-      event.key >= "1" && event.key <= "9"
+      this.activeModal &&
+      (event.metaKey || event.ctrlKey) &&
+      event.key >= "1" &&
+      event.key <= "9"
     ) {
       const index = parseInt(event.key) - 1;
       if (this.results[index]) {
