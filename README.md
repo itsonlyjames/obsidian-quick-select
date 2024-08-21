@@ -1,8 +1,8 @@
 <div style="text-align:center;">
 
-[![.github/workflows/release.yml](https://github.com/itsonlyjames/obsidian-quick-open/actions/workflows/release.yml/badge.svg)](https://github.com/itsonlyjames/obsidian-quick-open/actions/workflows/release.yml)
+[![.github/workflows/release.yml](https://github.com/itsonlyjames/obsidian-quick-select/actions/workflows/release.yml/badge.svg)](https://github.com/itsonlyjames/obsidian-quick-select/actions/workflows/release.yml)
 
-<h1>Obsidian Quick Open</h1>
+<h1>Obsidian Quick Select</h1>
 
 </div>
 
@@ -14,7 +14,7 @@
 
 ![Supercharge your workflow](docs/supercharge-your-workflow.gif)
 
-Quick open works in the quick switcher, command palette (including all subsequent modals), as well as the slash command!
+Quick Select works in all Obsidian modals including: the quick switcher, command palette (including all subsequent modals), as well as the slash command!
 
 <h3>Hot Swap Workspaces</h3>
 

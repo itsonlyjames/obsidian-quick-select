@@ -254,7 +254,7 @@ export default class QuickOpen extends Plugin {
       // Ensure styles are added only once
       if (
         !this.activeModal.ownerDocument.body.classList.contains(
-          "quick-open-modal-active",
+          "quick-select-modal-active",
         )
       ) {
         this.addModalStyles(this.activeModal.ownerDocument);
@@ -263,11 +263,11 @@ export default class QuickOpen extends Plugin {
   }
 
   addModalStyles(doc: Document) {
-    doc.body.classList.add("quick-open-modal-active");
+    doc.body.classList.add("quick-select-modal-active");
   }
 
   removeModalStyles(doc: Document) {
-    doc.body.classList.remove("quick-open-modal-active");
+    doc.body.classList.remove("quick-select-modal-active");
   }
 
   checkForActiveModal() {
