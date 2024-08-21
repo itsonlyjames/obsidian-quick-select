@@ -233,8 +233,6 @@ export default class QuickOpen extends Plugin {
   }
 
   handleKeyPress(event: KeyboardEvent) {
-    // need to look into app.hotkeyManager to override default
-    // tab switching command for quick open
     if (
       this.activeModal &&
       (event.metaKey || event.ctrlKey) &&

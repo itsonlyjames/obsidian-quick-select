@@ -21,7 +21,7 @@ export class QuickOpenSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Quick Open Settings" });
+    containerEl.createEl("h2", { text: "Quick Select Settings" });
 
     new Setting(containerEl)
       .setName("Stack Tabs in Popout Windows")
