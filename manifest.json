@@ -1,13 +1,13 @@
 {
-  "id": "quick-open",
-  "name": "Quick Select",
-  "version": "1.1.0",
-  "minAppVersion": "0.15.0",
-  "description": "Quickly select items in any modal using keyboard shortcuts. Supercharge your workflow with fast, efficient item selection in Obsidian modals.",
-  "author": "James Alexandre",
-  "authorUrl": "https://github.com/itsonlyjames",
-  "fundingUrl": {
-    "GitHub Sponsor": "https://github.com/sponsors/itsonlyjames"
-  },
-  "isDesktopOnly": true
+	"id": "quick-open",
+	"name": "Quick Select",
+	"version": "1.1.1",
+	"minAppVersion": "0.15.0",
+	"description": "Quickly select items in any modal using keyboard shortcuts. Supercharge your workflow with fast, efficient item selection in Obsidian modals.",
+	"author": "James Alexandre",
+	"authorUrl": "https://github.com/itsonlyjames",
+	"fundingUrl": {
+		"GitHub Sponsor": "https://github.com/sponsors/itsonlyjames"
+	},
+	"isDesktopOnly": true
 }
