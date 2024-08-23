@@ -6,25 +6,40 @@
 
 </div>
 
-<p style="text-align:center;">Open the <strong>quick switcher</strong> and press <code>cmd + number</code> to quickly open that file.</p>
-<p style="text-align:center;">Open the <strong>command palette</strong> and press <code>cmd + number</code> to quickly execute that command.</p>
-<p style="text-align:center;">Open the <strong>slash command</strong> and press <code>cmd + number</code> to quickly execute that command.</p>
+<p style="text-align:center;">Open any Obsidian modal and press <kbd>Mod</kbd> + number</kbd> to quickly open that file/execute that command/select that tag/choose that suggestion!</p>
 
-<h2>Supercharge Your Workflow!</h2>
+## Supercharge Your Workflow!
 
 ![Supercharge your workflow](docs/supercharge-your-workflow.gif)
 
-Quick Select works in all Obsidian modals including: the quick switcher, command palette (including all subsequent modals), as well as the slash command!
+Quick Select works in all Obsidian modals including: the quick switcher, command palette (including all subsequent modals), slash command, search, even tags and alias!
 
-<h3>Hot Swap Workspaces</h3>
+### Examples:
+
+#### Quick Select Tags (Frontmatter/Inline)
+
+![Quick Select Tags (Frontmatter/Inline)](docs/quick-select-tags.gif)
+
+#### Quick Select Search Items
+
+![Quick Select Search Items](docs/quick-select-search.gif)
+
+#### Hot Swap Workspaces
 
 ![Supercharge your workflow—Workspaces](docs/supercharge-your-workflow-workspaces.gif)
 
-<h3>Increase Inline Productivity</h3>
+#### Quick Select Slash Commands
 
 ![Supercharge your slash commands](docs/supercharge-your-slash-commands.gif)
 
 And much more...
+
+---
+
+### Mod Key Usage
+
+- MacOS: <kbd>Command</kbd> + number
+- Windows + Linux: <kbd>Ctrl</kbd> + number
 
 ---
 
