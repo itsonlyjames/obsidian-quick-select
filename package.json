@@ -1,6 +1,6 @@
 {
   "name": "obsidian-quick-select",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Allows the use of meta key plus number to quickly select and execute that item in any Obsidian modal",
   "main": "main.js",
   "scripts": {
