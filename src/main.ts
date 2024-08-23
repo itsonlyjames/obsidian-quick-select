@@ -222,7 +222,9 @@ export default class QuickOpen extends Plugin {
   }
 
   updateResults(resultsContainer: Element) {
-    const items = resultsContainer.querySelectorAll(".suggestion-item");
+    const items = resultsContainer.querySelectorAll(
+      ".suggestion-item:not(.mod-group)",
+    );
     this.results = Array.from(items)
       .slice(0, 9)
       .map((item, index) => ({

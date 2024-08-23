@@ -1,33 +1,22 @@
-.quick-select-modal-active .prompt-results {
-	counter-reset: suggestion-counter;
-}
-
 .quick-select-modal-active .suggestion-item {
 	display: flex;
 	justify-content: start;
 }
 
-.quick-select-modal-active .suggestion-item:nth-child(-n+9) {
+.quick-select-modal-active .suggestion-item:nth-child(-n+9 of :not(.mod-group)) {
 	counter-increment: suggestion-counter;
-	display: flex;
-	justify-content: flex-start;
-	align-items: center;
 }
 
 .quick-select-modal-active .suggestion-item .suggestion-content {
 	width: 100%;
 }
 
-.quick-select-modal-active .suggestion-item:nth-child(-n+9)::after {
+.quick-select-modal-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	content: counter(suggestion-counter);
 	color: var(--text-muted);
 	font-size: 0.8em;
 	padding-left: 10px;
 	margin-left: auto;
-}
-
-.quick-select-modal-active .suggestion-item:nth-child(n+10)::after {
-	content: none;
 }
 
 .quick-select-modal-active .suggestion-item>div.callout {
