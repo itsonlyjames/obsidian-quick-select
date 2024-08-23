@@ -17,6 +17,7 @@
 	font-size: 0.8em;
 	padding-left: 10px;
 	margin-left: auto;
+	align-self: center;
 }
 
 .quick-select-modal-active .suggestion-item>div.callout {
