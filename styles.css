@@ -1,6 +1,11 @@
 .quick-select-modal-active .suggestion-item {
 	display: flex;
 	justify-content: start;
+	align-items: center;
+}
+
+.quick-select-modal-active .suggestion-item .suggestion-highlight {
+	line-height: 100%;
 }
 
 .quick-select-modal-active .suggestion-item:nth-child(-n+9 of :not(.mod-group)) {
