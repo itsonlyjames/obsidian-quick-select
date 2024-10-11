@@ -237,7 +237,7 @@ export default class QuickOpen extends Plugin {
   handleKeyPress(event: KeyboardEvent) {
     if (
       this.activeModal &&
-      (event.metaKey || event.ctrlKey) &&
+      event[this.settings.modifierKey] &&
       event.key >= "1" &&
       event.key <= "9"
     ) {
