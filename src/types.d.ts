@@ -1,4 +1,4 @@
-import { App, Hotkey, Workspace } from "obsidian";
+import { Workspace } from "obsidian";
 
 interface ExtendedWorkspace extends Workspace {
   floatingSplit: {
@@ -34,4 +34,10 @@ declare module "obsidian" {
       };
     };
   }
+}
+
+interface NavigatorKeyboard extends Navigator {
+  keyboard?: {
+    lock: () => Promise<void>;
+  };
 }

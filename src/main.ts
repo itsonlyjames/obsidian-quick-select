@@ -1,10 +1,16 @@
-import { Plugin, Workspace, WorkspaceLeaf } from "obsidian";
+import { Hotkey, Plugin, Workspace, WorkspaceLeaf } from "obsidian";
 import type { AppWindow, ExtendedWorkspace } from "./types";
 import {
   DEFAULT_SETTINGS,
   QuickOpenSettings,
   QuickOpenSettingTab,
 } from "./settings";
+import {
+  isPhysicalKeyboardPresent,
+  addModalStyles,
+  removeModalStyles,
+  isAppWindow,
+} from "./utils";
 
 export default class QuickOpen extends Plugin {
   private modalObserver: MutationObserver;
@@ -13,6 +19,7 @@ export default class QuickOpen extends Plugin {
   private results: { title: string; element: HTMLElement }[] = [];
   private popoutWindows: Set<Window> = new Set();
   public settings: QuickOpenSettings;
+  private originalHotkeys: { [key: string]: Hotkey } = {};
 
   async onload() {
     await this.loadSettings();
@@ -48,7 +55,6 @@ export default class QuickOpen extends Plugin {
 
     document.addEventListener("keydown", this.handleKeyPress.bind(this), true);
 
-    // Check if a modal is already active when the plugin loads
     this.checkForActiveModal();
   }
 
@@ -67,15 +73,11 @@ export default class QuickOpen extends Plugin {
         const win = bodyEl.ownerDocument.defaultView as
           | (Window & typeof globalThis)
           | null;
-        if (win && this.isAppWindow(win) && !this.popoutWindows.has(win)) {
+        if (win && isAppWindow(win) && !this.popoutWindows.has(win)) {
           this.initializePopoutWindow(win);
         }
       }
     });
-  }
-
-  isAppWindow(win: Window): win is AppWindow {
-    return "app" in win && "workspace" in (win as any).app;
   }
 
   initializePopoutWindow(win: AppWindow) {
@@ -91,7 +93,6 @@ export default class QuickOpen extends Plugin {
 
     win.addEventListener("keydown", this.handleKeyPress.bind(this));
 
-    // Set the stacked tabs for the popout window
     if (this.settings.stackTabsInPopout) {
       this.setStackedTabsForPopoutWindow(win.app.workspace);
     }
@@ -105,9 +106,7 @@ export default class QuickOpen extends Plugin {
 
   setStackedTabsForPopoutWindow(workspace: Workspace) {
     const extendedWorkspace = workspace as ExtendedWorkspace;
-    // Wait for the layout to be ready
     extendedWorkspace.onLayoutReady(() => {
-      // Ensure we target the floating split of the new workspace
       if (extendedWorkspace.floatingSplit) {
         extendedWorkspace.floatingSplit.children.forEach((split) => {
           split.children.forEach((leaf) => {
@@ -149,15 +148,14 @@ export default class QuickOpen extends Plugin {
     const resultsContainer = modalElement.querySelector(
       ".suggestion, .prompt-results",
     );
-    if (resultsContainer) {
+    if (resultsContainer && isPhysicalKeyboardPresent()) {
+      console.log("all met, inject functionality");
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
-      this.addModalStyles(modalElement.ownerDocument);
+      addModalStyles(modalElement.ownerDocument);
       this.disableDefaultHotkeys();
     }
   }
-
-  private originalHotkeys: { [key: string]: any } = {};
 
   private disableDefaultHotkeys() {
     const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
@@ -179,7 +177,7 @@ export default class QuickOpen extends Plugin {
     if (this.activeModal === modalElement) {
       this.activeModal = null;
       this.results = [];
-      this.removeModalStyles(modalElement.ownerDocument);
+      removeModalStyles(modalElement.ownerDocument);
       this.resultsObserver.disconnect();
       this.restoreDefaultHotkeys();
       document.removeEventListener(
@@ -231,7 +229,7 @@ export default class QuickOpen extends Plugin {
         title: item.textContent || `Result ${index + 1}`,
         element: item as HTMLElement,
       }));
-    this.addModalStyles(resultsContainer.ownerDocument);
+    addModalStyles(resultsContainer.ownerDocument);
   }
 
   handleKeyPress(event: KeyboardEvent) {
@@ -250,24 +248,14 @@ export default class QuickOpen extends Plugin {
   }
 
   handleQuickPreview() {
-    if (this.activeModal) {
-      // Ensure styles are added only once
-      if (
-        !this.activeModal.ownerDocument.body.classList.contains(
-          "quick-select-modal-active",
-        )
-      ) {
-        this.addModalStyles(this.activeModal.ownerDocument);
-      }
+    if (
+      this.activeModal &&
+      !this.activeModal.ownerDocument.body.classList.contains(
+        "quick-select-modal-active",
+      )
+    ) {
+      addModalStyles(this.activeModal.ownerDocument);
     }
-  }
-
-  addModalStyles(doc: Document) {
-    doc.body.classList.add("quick-select-modal-active");
-  }
-
-  removeModalStyles(doc: Document) {
-    doc.body.classList.remove("quick-select-modal-active");
   }
 
   checkForActiveModal() {
@@ -283,12 +271,11 @@ export default class QuickOpen extends Plugin {
     this.modalObserver.disconnect();
     this.resultsObserver.disconnect();
     document.removeEventListener("keydown", this.handleKeyPress);
-    this.removeModalStyles(document);
+    removeModalStyles(document);
 
-    // Clean up for popout windows
     this.popoutWindows.forEach((win) => {
       win.removeEventListener("keydown", this.handleKeyPress);
-      this.removeModalStyles(win.document);
+      removeModalStyles(win.document);
     });
   }
 }
