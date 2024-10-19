@@ -5,11 +5,13 @@ type modOptions = "metaKey" | "ctrlKey" | "altKey";
 export interface QuickOpenSettings {
   stackTabsInPopout: boolean;
   modifierKey: modOptions;
+  enableForTablet: boolean;
 }
 
 export const DEFAULT_SETTINGS: QuickOpenSettings = {
   stackTabsInPopout: true,
   modifierKey: "metaKey",
+  enableForTablet: false,
 };
 
 export class QuickOpenSettingTab extends PluginSettingTab {
@@ -52,6 +54,20 @@ export class QuickOpenSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.modifierKey)
           .onChange(async (value: modOptions) => {
             this.plugin.settings.modifierKey = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Enable Quick Select for iPads/tablets")
+      .setDesc(
+        "This allows the use of Quick Select on iPads/tablets with physical keyboards",
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableForTablet)
+          .onChange(async (value) => {
+            this.plugin.settings.enableForTablet = value;
             await this.plugin.saveSettings();
           }),
       );

@@ -1,8 +1,19 @@
-import { NavigatorKeyboard, AppWindow } from "./types";
+import { AppWindow, NavigatorKeyboard } from "./types";
 
-export const isPhysicalKeyboardPresent = () => {
-  const nav = navigator as NavigatorKeyboard;
-  return nav.keyboard && nav.keyboard.lock !== undefined;
+export const canInjectFunctionality = (enableForTablet: boolean) => {
+  const userAgent = navigator.userAgent;
+
+  const isTablet =
+    /iPad/.test(userAgent) ||
+    (/Android/.test(userAgent) && !/Mobile/.test(userAgent));
+
+  if (isTablet) {
+    return enableForTablet;
+  }
+
+  if (/Android|iPhone|iPod/.test(userAgent)) return false;
+
+  return (navigator as NavigatorKeyboard).keyboard;
 };
 
 export const addModalStyles = (doc: Document) => {

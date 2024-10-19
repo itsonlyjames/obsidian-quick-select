@@ -6,7 +6,7 @@ import {
   QuickOpenSettingTab,
 } from "./settings";
 import {
-  isPhysicalKeyboardPresent,
+  canInjectFunctionality,
   addModalStyles,
   removeModalStyles,
   isAppWindow,
@@ -148,8 +148,10 @@ export default class QuickOpen extends Plugin {
     const resultsContainer = modalElement.querySelector(
       ".suggestion, .prompt-results",
     );
-    if (resultsContainer && isPhysicalKeyboardPresent()) {
-      console.log("all met, inject functionality");
+    if (
+      resultsContainer &&
+      canInjectFunctionality(this.settings.enableForTablet)
+    ) {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
       addModalStyles(modalElement.ownerDocument);
