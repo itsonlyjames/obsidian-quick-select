@@ -1,19 +1,11 @@
-import { AppWindow, NavigatorKeyboard } from "./types";
+import { AppWindow } from "./types";
 
-export const canInjectFunctionality = (enableForTablet: boolean) => {
+export const canInjectFunctionality = () => {
   const userAgent = navigator.userAgent;
-
-  const isTablet =
-    /iPad/.test(userAgent) ||
-    (/Android/.test(userAgent) && !/Mobile/.test(userAgent));
-
-  if (isTablet) {
-    return enableForTablet;
-  }
 
   if (/Android|iPhone|iPod/.test(userAgent)) return false;
 
-  return (navigator as NavigatorKeyboard).keyboard;
+  return true;
 };
 
 export const addModalStyles = (doc: Document) => {

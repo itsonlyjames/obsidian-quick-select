@@ -148,10 +148,7 @@ export default class QuickOpen extends Plugin {
     const resultsContainer = modalElement.querySelector(
       ".suggestion, .prompt-results",
     );
-    if (
-      resultsContainer &&
-      canInjectFunctionality(this.settings.enableForTablet)
-    ) {
+    if (resultsContainer && canInjectFunctionality()) {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
       addModalStyles(modalElement.ownerDocument);
