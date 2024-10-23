@@ -6,10 +6,10 @@ import {
   QuickOpenSettingTab,
 } from "./settings";
 import {
-  canInjectFunctionality,
   addModalStyles,
   removeModalStyles,
   isAppWindow,
+  isKeyboardPresent,
 } from "./utils";
 
 export default class QuickOpen extends Plugin {
@@ -144,11 +144,11 @@ export default class QuickOpen extends Plugin {
     }
   }
 
-  handleNewModal(modalElement: HTMLElement) {
+  async handleNewModal(modalElement: HTMLElement) {
     const resultsContainer = modalElement.querySelector(
       ".suggestion, .prompt-results",
     );
-    if (resultsContainer && canInjectFunctionality()) {
+    if (resultsContainer && (await isKeyboardPresent())) {
       this.activeModal = modalElement;
       this.injectFunctionality(resultsContainer);
       addModalStyles(modalElement.ownerDocument);

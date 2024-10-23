@@ -35,9 +35,3 @@ declare module "obsidian" {
     };
   }
 }
-
-interface NavigatorKeyboard extends Navigator {
-  keyboard?: {
-    lock: () => Promise<void>;
-  };
-}

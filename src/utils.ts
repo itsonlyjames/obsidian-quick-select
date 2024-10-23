@@ -1,11 +1,9 @@
 import { AppWindow } from "./types";
 
-export const canInjectFunctionality = () => {
-  const userAgent = navigator.userAgent;
-
-  if (/Android|iPhone|iPod/.test(userAgent)) return false;
-
-  return true;
+export const isKeyboardPresent = async () => {
+  // @ts-ignore
+  const keyboardLayout = await navigator.keyboard.getLayoutMap();
+  return keyboardLayout && keyboardLayout.size > 0;
 };
 
 export const addModalStyles = (doc: Document) => {
