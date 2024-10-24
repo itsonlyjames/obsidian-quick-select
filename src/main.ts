@@ -5,7 +5,7 @@ import {
   QuickOpenSettings,
   QuickOpenSettingTab,
 } from "./settings";
-import { isAppWindow } from "./utils";
+import { addModStyles, removeModStyles, isAppWindow } from "./utils";
 
 export default class QuickOpen extends Plugin {
   public settings: QuickOpenSettings;
@@ -14,6 +14,8 @@ export default class QuickOpen extends Plugin {
   private popoutWindows: Set<Window> = new Set();
   private originalHotkeys: { [key: string]: Hotkey } = {};
   private keyListener: EventListener | null;
+  private isModifierKeyPressed: boolean = false;
+  private modifierKeyListener: (e: KeyboardEvent) => void;
 
   async onload() {
     await this.loadSettings();
@@ -36,6 +38,10 @@ export default class QuickOpen extends Plugin {
       ),
     );
 
+    this.modifierKeyListener = this.handleModifierKeyChange.bind(this);
+    document.addEventListener("keydown", this.modifierKeyListener);
+    document.addEventListener("keyup", this.modifierKeyListener);
+
     this.checkForActiveModal();
   }
 
@@ -45,6 +51,30 @@ export default class QuickOpen extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  private handleModifierKeyChange(event: KeyboardEvent) {
+    const isModifierEvent = event[this.settings.modifierKey];
+    if (this.isModifierKeyPressed !== isModifierEvent) {
+      this.isModifierKeyPressed = isModifierEvent;
+
+      if (this.activeModal) {
+        this.updateModalModifierClass();
+      }
+    }
+  }
+
+  private updateModalModifierClass() {
+    if (this.activeModal) {
+      if (this.isModifierKeyPressed) {
+        setTimeout(() => {
+          if (this.activeModal && this.isModifierKeyPressed)
+            addModStyles(this.activeModal.ownerDocument);
+        }, 150);
+      } else {
+        removeModStyles(this.activeModal.ownerDocument);
+      }
+    }
   }
 
   handleLayoutChange() {
@@ -72,6 +102,8 @@ export default class QuickOpen extends Plugin {
       subtree: true,
     });
 
+    win.addEventListener("keydown", this.modifierKeyListener);
+    win.addEventListener("keyup", this.modifierKeyListener);
     win.addEventListener("keydown", this.handleKeyPress.bind(this));
 
     if (this.settings.stackTabsInPopout) {
@@ -80,6 +112,8 @@ export default class QuickOpen extends Plugin {
 
     this.register(() => {
       popoutModalObserver.disconnect();
+      win.removeEventListener("keydown", this.modifierKeyListener);
+      win.removeEventListener("keyup", this.modifierKeyListener);
       win.removeEventListener("keydown", this.handleKeyPress.bind(this));
       this.popoutWindows.delete(win);
     });
@@ -132,10 +166,15 @@ export default class QuickOpen extends Plugin {
     if (this.keyListener) {
       document.addEventListener("keydown", this.keyListener, true);
     }
+
+    if (this.isModifierKeyPressed) {
+      this.updateModalModifierClass();
+    }
   }
 
   handleModalClosed(modalElement: HTMLElement) {
     if (this.activeModal === modalElement) {
+      removeModStyles(this.activeModal.ownerDocument);
       this.activeModal = null;
       this.restoreDefaultHotkeys();
 
@@ -224,7 +263,12 @@ export default class QuickOpen extends Plugin {
   onunload() {
     this.modalObserver.disconnect();
 
+    document.removeEventListener("keydown", this.modifierKeyListener);
+    document.removeEventListener("keyup", this.modifierKeyListener);
+
     this.popoutWindows.forEach((win) => {
+      win.removeEventListener("keydown", this.modifierKeyListener);
+      win.removeEventListener("keyup", this.modifierKeyListener);
       if (this.keyListener)
         win.removeEventListener("keydown", this.keyListener);
     });

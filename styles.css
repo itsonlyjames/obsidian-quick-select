@@ -1,31 +1,48 @@
-.quick-select-modal-active .suggestion-item {
+.suggestion-item {
 	display: flex;
 	justify-content: start;
 	align-items: center;
 }
 
-.quick-select-modal-active .suggestion-item .suggestion-highlight {
+.suggestion-item .suggestion-highlight {
 	line-height: 100%;
 }
 
-.quick-select-modal-active .suggestion-item:nth-child(-n+9 of :not(.mod-group)) {
+.suggestion-item:nth-child(-n+9 of :not(.mod-group)) {
 	counter-increment: suggestion-counter;
 }
 
-.quick-select-modal-active .suggestion-item .suggestion-content {
+.suggestion-item .suggestion-content {
 	width: 100%;
 }
 
-.quick-select-modal-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+.suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	content: counter(suggestion-counter);
 	color: var(--text-muted);
 	font-size: 0.8em;
-	padding-left: 10px;
+	padding: 4px 8px;
 	margin-left: auto;
 	align-self: center;
+	position: absolute;
+	right: -50px;
+	/* right: var(--size-4-5); */
+	transition: right 100ms ease-out;
+	background-color: var(--background-primary);
+	/* opacity: 0; */
 }
 
-.quick-select-modal-active .suggestion-item>div.callout {
+.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	transition: right 200ms ease-in;
+	right: var(--size-4-5);
+	/* opacity: 1; */
+}
+
+.quick-select-mod-key-active .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	right: var(--size-4-2);
+	/* opacity: 1; */
+}
+
+.suggestion-item>div.callout {
 	width: 100%;
 	mix-blend-mode: normal;
 }

@@ -1,19 +1,14 @@
 import { AppWindow } from "./types";
 
-export const isKeyboardPresent = async () => {
-  // @ts-ignore
-  const keyboardLayout = await navigator.keyboard.getLayoutMap();
-  return keyboardLayout && keyboardLayout.size > 0;
+export const addModStyles = (doc: Document) => {
+  doc.body.classList.add("quick-select-mod-key-active");
 };
 
-export const addModalStyles = (doc: Document) => {
-  doc.body.classList.add("quick-select-modal-active");
-};
-
-export const removeModalStyles = (doc: Document) => {
-  doc.body.classList.remove("quick-select-modal-active");
+export const removeModStyles = (doc: Document) => {
+  doc.body.classList.remove("quick-select-mod-key-active");
 };
 
 export const isAppWindow = (win: Window): win is AppWindow => {
-  return "app" in win && "workspace" in (win as any).app;
+  // @ts-ignore
+  return "app" in win && "workspace" in win.app;
 };
