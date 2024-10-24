@@ -24,22 +24,48 @@
 	margin-left: auto;
 	align-self: center;
 	position: absolute;
-	right: -50px;
-	/* right: var(--size-4-5); */
-	transition: right 100ms ease-out;
-	background-color: var(--background-primary);
-	/* opacity: 0; */
-}
-
-.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
-	transition: right 200ms ease-in;
 	right: var(--size-4-5);
-	/* opacity: 1; */
+	background-color: var(--background-primary);
+	opacity: 0;
 }
 
-.quick-select-mod-key-active .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+.suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	right: var(--size-4-2);
-	/* opacity: 1; */
+}
+
+/* None */
+.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	opacity: 1;
+}
+
+/* Slide */
+.quick-select-transition-slide .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	right: -50px;
+	transition: all 100ms ease-out;
+}
+
+.quick-select-transition-slide.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	transition: all 200ms ease-in;
+	right: var(--size-4-5);
+}
+
+.quick-select-transition-slide.quick-select-mod-key-active .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	right: var(--size-4-2);
+}
+
+/* Fade */
+.quick-select-transition-fade .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	opacity: 0;
+	right: var(--size-4-5);
+}
+
+.quick-select-transition-fade.quick-select-mod-key-active .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	right: var(--size-4-2);
+}
+
+.quick-select-transition-fade.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	transition: all 200ms ease-in;
+	opacity: 1;
 }
 
 .suggestion-item>div.callout {

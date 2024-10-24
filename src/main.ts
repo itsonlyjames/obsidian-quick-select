@@ -5,7 +5,13 @@ import {
   QuickOpenSettings,
   QuickOpenSettingTab,
 } from "./settings";
-import { addModStyles, removeModStyles, isAppWindow } from "./utils";
+import {
+  addModStyles,
+  removeModStyles,
+  isAppWindow,
+  addModTransition,
+  removeModTransition,
+} from "./utils";
 
 export default class QuickOpen extends Plugin {
   public settings: QuickOpenSettings;
@@ -37,6 +43,8 @@ export default class QuickOpen extends Plugin {
         this.handleLayoutChange.bind(this),
       ),
     );
+
+    addModTransition(document, this.settings.transitionStyle);
 
     this.modifierKeyListener = this.handleModifierKeyChange.bind(this);
     document.addEventListener("keydown", this.modifierKeyListener);
@@ -262,6 +270,8 @@ export default class QuickOpen extends Plugin {
 
   onunload() {
     this.modalObserver.disconnect();
+
+    removeModTransition(document, this.settings.transitionStyle);
 
     document.removeEventListener("keydown", this.modifierKeyListener);
     document.removeEventListener("keyup", this.modifierKeyListener);

@@ -2,14 +2,17 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import QuickOpen from "./main";
 
 type modOptions = "metaKey" | "ctrlKey" | "altKey";
+export type transitionOptions = "none" | "fade" | "slide";
 export interface QuickOpenSettings {
   stackTabsInPopout: boolean;
   modifierKey: modOptions;
+  transitionStyle: transitionOptions;
 }
 
 export const DEFAULT_SETTINGS: QuickOpenSettings = {
   stackTabsInPopout: true,
   modifierKey: "metaKey",
+  transitionStyle: "slide",
 };
 
 export class QuickOpenSettingTab extends PluginSettingTab {
@@ -56,11 +59,35 @@ export class QuickOpenSettingTab extends PluginSettingTab {
           }),
       );
 
+    new Setting(containerEl)
+      .setName("Counter transition style")
+      .setDesc("Set transition style of Quick Select counters")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOptions({
+            none: "None",
+            fade: "Fade",
+            slide: "Slide",
+          })
+          .setValue(this.plugin.settings.transitionStyle)
+          .onChange(async (value: transitionOptions) => {
+            console.log(document.body.classList);
+            document.body.classList.forEach((className) => {
+              if (/^quick-select-transition-/.test(className)) {
+                document.body.classList.remove(className);
+              }
+            });
+            document.body.classList.add(`quick-select-transition-${value}`);
+            this.plugin.settings.transitionStyle = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
     containerEl.createEl("h2", { text: "Miscellaneous" });
 
     new Setting(containerEl)
-      .setName("Stack Tabs in Popout Windows")
-      .setDesc("Enable or disable stacked tabs for popout windows.")
+      .setName("Stack tabs in popout windows")
+      .setDesc("Enable or disable stacked tabs for popout windows")
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.stackTabsInPopout)
