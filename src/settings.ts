@@ -2,7 +2,7 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import QuickOpen from "./main";
 
 type modOptions = "metaKey" | "ctrlKey" | "altKey";
-export type transitionOptions = "none" | "fade" | "slide";
+export type transitionOptions = "none" | "fade" | "slide" | "permanent";
 export interface QuickOpenSettings {
   stackTabsInPopout: boolean;
   modifierKey: modOptions;
@@ -68,6 +68,7 @@ export class QuickOpenSettingTab extends PluginSettingTab {
             none: "None",
             fade: "Fade",
             slide: "Slide",
+            permanent: "Permanent",
           })
           .setValue(this.plugin.settings.transitionStyle)
           .onChange(async (value: transitionOptions) => {

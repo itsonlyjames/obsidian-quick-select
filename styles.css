@@ -25,7 +25,8 @@
 	align-self: center;
 	position: absolute;
 	right: var(--size-4-5);
-	background-color: var(--background-primary);
+	background-color: var(--code-background);
+	border-radius: 4px;
 	opacity: 0;
 }
 
@@ -36,6 +37,16 @@
 /* None */
 .quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	opacity: 1;
+}
+
+/* Permanent */
+.quick-select-transition-permanent .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+	position: relative;
+	opacity: 1;
+	right: 0;
+	margin-left: var(--size-4-2);
+	padding: 0;
+	background-color: transparent;
 }
 
 /* Slide */
