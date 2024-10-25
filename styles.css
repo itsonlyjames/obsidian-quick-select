@@ -25,7 +25,7 @@
 	align-self: center;
 	position: absolute;
 	right: var(--size-4-5);
-	background-color: var(--code-background);
+	background-color: var(--background-primary-alt);
 	border-radius: 4px;
 	opacity: 0;
 }
