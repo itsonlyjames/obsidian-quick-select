@@ -70,7 +70,7 @@
 	right: var(--size-4-5);
 }
 
-.quick-select-transition-fade.quick-select-mod-key-active .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
+.quick-select-transition-fade .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	right: var(--size-4-2);
 }
 
