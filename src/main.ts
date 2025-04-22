@@ -211,13 +211,20 @@ export default class QuickOpen extends Plugin {
 
   private restoreDefaultHotkeys() {
     const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
-    for (const [hotkeyId, hotkeys] of Object.entries(this.originalHotkeys)) {
-      hotkeyManager.addDefaultHotkeys(hotkeyId, hotkeys);
+
+    if (!hotkeyManager) return;
+
+    if (this.originalHotkeys) {
+      for (const [hotkeyId, hotkeys] of Object.entries(this.originalHotkeys)) {
+        hotkeyManager.addDefaultHotkeys(hotkeyId, hotkeys);
+      }
+
+      if (hotkeyManager) {
+        hotkeyManager.bake();
+      }
+
+      this.originalHotkeys = {};
     }
-
-    hotkeyManager.bake();
-
-    this.originalHotkeys = {};
   }
 
   returnResultsItems(resultsContainer: Element) {
