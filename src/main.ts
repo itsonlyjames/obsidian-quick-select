@@ -213,10 +213,10 @@ export default class QuickOpen extends Plugin {
     const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
     if (!hotkeyManager) return;
 
-	const savedHotkeys = Object.entries(this.originalHotkeys)
+    const savedHotkeys = Object.entries(this.originalHotkeys);
     if (savedHotkeys.length > 0) {
       for (const [hotkeyId, hotkey] of savedHotkeys) {
-        if (typeof hotkeyId === 'string' && Array.isArray(hotkey)) {
+        if (typeof hotkeyId === "string" && Array.isArray(hotkey)) {
           hotkeyManager.addDefaultHotkeys(hotkeyId, hotkey);
         } else {
           console.warn(`Invalid hotkey object for ${hotkeyId}:`, hotkey);
@@ -229,10 +229,9 @@ export default class QuickOpen extends Plugin {
         } catch (e) {
           console.error("Failed to bake hotkeys:", e);
         } finally {
-		  this.originalHotkeys = {};
-		}
+          this.originalHotkeys = {};
+        }
       }
-
     }
   }
 
