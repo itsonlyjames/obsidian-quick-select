@@ -1,4 +1,4 @@
-import { Hotkey, Plugin, Workspace, WorkspaceLeaf } from "obsidian";
+import { Plugin, Workspace, WorkspaceLeaf } from "obsidian";
 import type { AppWindow, ExtendedWorkspace } from "./types";
 import {
   DEFAULT_SETTINGS,
@@ -13,15 +13,21 @@ import {
   removeModTransition,
 } from "./utils";
 
+type NumberKey = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
+function isNumberKey(k: string): k is NumberKey {
+  return k.length === 1 && k >= "1" && k <= "9";
+}
+
 export default class QuickOpen extends Plugin {
   public settings: QuickOpenSettings;
   private modalObserver: MutationObserver;
   private activeModal: HTMLElement | null = null;
   private popoutWindows: Set<Window> = new Set();
-  private originalHotkeys: { [key: string]: Hotkey } = {};
-  private keyListener: EventListener | null;
+  private modalKeyListener?: (ev: KeyboardEvent) => void;
   private isModifierKeyPressed: boolean = false;
-  private modifierKeyListener: (e: KeyboardEvent) => void;
+  private modifierKeyListener: (ev: KeyboardEvent) => void;
+  private modalKeyWindow?: Window;
 
   async onload() {
     await this.loadSettings();
@@ -112,7 +118,6 @@ export default class QuickOpen extends Plugin {
 
     win.addEventListener("keydown", this.modifierKeyListener);
     win.addEventListener("keyup", this.modifierKeyListener);
-    win.addEventListener("keydown", this.handleKeyPress.bind(this));
 
     if (this.settings.stackTabsInPopout) {
       this.setStackedTabsForPopoutWindow(win.app.workspace);
@@ -122,7 +127,6 @@ export default class QuickOpen extends Plugin {
       popoutModalObserver.disconnect();
       win.removeEventListener("keydown", this.modifierKeyListener);
       win.removeEventListener("keyup", this.modifierKeyListener);
-      win.removeEventListener("keydown", this.handleKeyPress.bind(this));
       this.popoutWindows.delete(win);
     });
   }
@@ -169,11 +173,15 @@ export default class QuickOpen extends Plugin {
 
   handleModalOpen(modalElement: HTMLElement) {
     this.activeModal = modalElement;
-    this.disableDefaultHotkeys();
-    this.keyListener = this.handleKeyPress.bind(this);
-    if (this.keyListener) {
-      document.addEventListener("keydown", this.keyListener, true);
-    }
+
+    this.modalKeyListener = (ev: KeyboardEvent) => this.interceptModalKeys(ev);
+    this.modalKeyWindow = modalElement.ownerDocument.defaultView!;
+
+    this.modalKeyWindow.addEventListener(
+      "keydown",
+      this.modalKeyListener,
+      true,
+    );
 
     if (this.isModifierKeyPressed) {
       this.updateModalModifierClass();
@@ -181,97 +189,43 @@ export default class QuickOpen extends Plugin {
   }
 
   handleModalClosed(modalElement: HTMLElement) {
-    if (this.activeModal === modalElement) {
-      removeModStyles(this.activeModal.ownerDocument);
-      this.activeModal = null;
-      this.restoreDefaultHotkeys();
+    if (this.activeModal !== modalElement) return;
 
-      if (this.keyListener) {
-        document.removeEventListener("keydown", this.keyListener, true);
-        this.keyListener = null;
-      }
-    }
-  }
+    removeModStyles(modalElement.ownerDocument);
+    this.activeModal = null;
 
-  private disableDefaultHotkeys() {
-    const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
-
-    for (let i = 1; i < 9; i++) {
-      const hotkeyId = `workspace:goto-tab-${i}`;
-      this.originalHotkeys[hotkeyId] =
-        hotkeyManager.getDefaultHotkeys(hotkeyId);
-      hotkeyManager.removeDefaultHotkeys(hotkeyId);
-    }
-
-    const lastTabHotkeyId = "workspace:goto-last-tab";
-    this.originalHotkeys[lastTabHotkeyId] =
-      hotkeyManager.getDefaultHotkeys(lastTabHotkeyId);
-    hotkeyManager.removeDefaultHotkeys(lastTabHotkeyId);
-  }
-
-  private restoreDefaultHotkeys() {
-    const hotkeyManager = this.app.internalPlugins.app.hotkeyManager;
-    if (!hotkeyManager) return;
-
-    const savedHotkeys = Object.entries(this.originalHotkeys);
-    if (savedHotkeys.length > 0) {
-      for (const [hotkeyId, hotkey] of savedHotkeys) {
-        if (typeof hotkeyId === "string" && Array.isArray(hotkey)) {
-          hotkeyManager.addDefaultHotkeys(hotkeyId, hotkey);
-        } else {
-          console.warn(`Invalid hotkey object for ${hotkeyId}:`, hotkey);
-        }
-      }
-
-      if (hotkeyManager) {
-        try {
-          hotkeyManager.bake();
-        } catch (e) {
-          console.error("Failed to bake hotkeys:", e);
-        } finally {
-          this.originalHotkeys = {};
-        }
-      }
-    }
-  }
-
-  returnResultsItems(resultsContainer: Element) {
-    const items = resultsContainer.querySelectorAll(
-      ".suggestion-item:not(.mod-group)",
-    );
-    return Array.from(items)
-      .slice(0, 9)
-      .map((item, index) => ({
-        title: item.textContent || `Result ${index + 1}`,
-        element: item as HTMLElement,
-      }));
-  }
-
-  handleResultsItemClick(event: KeyboardEvent) {
-    if (this.activeModal) {
-      const resultsContainer = this.activeModal.querySelector(
-        ".suggestion, .prompt-results",
+    if (this.modalKeyListener && this.modalKeyWindow)
+      this.modalKeyWindow.removeEventListener(
+        "keydown",
+        this.modalKeyListener,
+        true,
       );
-      if (resultsContainer) {
-        const results = this.returnResultsItems(resultsContainer);
-        const index = parseInt(event.key) - 1;
-        if (results && results[index]) {
-          event.preventDefault();
-          results[index].element.click();
-        }
-      }
-    }
+
+    this.modalKeyListener = undefined;
+    this.modalKeyWindow = undefined;
   }
 
-  handleKeyPress(event: KeyboardEvent) {
-    if (
-      this.activeModal &&
-      event[this.settings.modifierKey] &&
-      event.key >= "1" &&
-      event.key <= "9"
-    ) {
-      this.handleResultsItemClick(event);
-    }
+  private interceptModalKeys(ev: KeyboardEvent) {
+    if (!ev[this.settings.modifierKey]) return;
+    if (!isNumberKey(ev.key)) return;
+
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+
+    const idx = Number(ev.key) - 1;
+
+    const resultsContainer = this.activeModal?.querySelector(
+      ".suggestion, .prompt-results",
+    );
+    if (!resultsContainer) return;
+
+    const items = Array.from(
+      resultsContainer.querySelectorAll<HTMLElement>(
+        ".suggestion-item:not(.mod-group)",
+      ),
+    ).slice(0, 9);
+    const el = items[idx];
+    if (el) el.click();
   }
 
   checkForActiveModal() {
@@ -294,13 +248,13 @@ export default class QuickOpen extends Plugin {
     this.popoutWindows.forEach((win) => {
       win.removeEventListener("keydown", this.modifierKeyListener);
       win.removeEventListener("keyup", this.modifierKeyListener);
-      if (this.keyListener)
-        win.removeEventListener("keydown", this.keyListener);
     });
 
-    if (this.keyListener) {
-      document.removeEventListener("keydown", this.keyListener);
-      this.keyListener = null;
-    }
+    if (this.modalKeyListener && this.modalKeyWindow)
+      this.modalKeyWindow.removeEventListener(
+        "keydown",
+        this.modalKeyListener,
+        true,
+      );
   }
 }
