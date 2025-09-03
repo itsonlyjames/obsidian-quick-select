@@ -1,4 +1,5 @@
 import {
+    Modifier,
   Plugin,
   PopoverSuggest,
   Scope,
@@ -77,7 +78,7 @@ export default class QuickOpen extends Plugin {
         self.modalScopeStack.set(this, modalScope);
 
         for (let i = 1; i <= 9; i++) {
-          modalScope.register(["Mod"], i.toString(), (evt) => {
+          modalScope.register([self.getKeymapModifier()], i.toString(), (evt) => {
             evt.preventDefault();
             const idx = i - 1;
             if (!this.chooser?.values || idx >= this.chooser.values.length)
@@ -152,7 +153,7 @@ export default class QuickOpen extends Plugin {
         self.popoverScopeStack.set(this, popoverScope);
 
         for (let i = 1; i <= 9; i++) {
-          popoverScope.register(["Mod"], i.toString(), (evt) => {
+          popoverScope.register([self.getKeymapModifier()], i.toString(), (evt) => {
             evt.preventDefault();
             let idx = i - 1;
             if (this.suggestEl.classList.contains("mod-search-suggestion")) {
@@ -294,5 +295,18 @@ export default class QuickOpen extends Plugin {
       win.removeEventListener("keyup", this.modifierKeyListener);
       this.popoutWindows.delete(win);
     });
+  }
+
+  private getKeymapModifier(): Modifier {
+    switch (this.settings.modifierKey) {
+      case "metaKey":
+        return "Mod";
+      case "ctrlKey":
+        return "Ctrl";
+      case "altKey":
+        return "Alt";
+      default:
+        return "Mod";
+    }
   }
 }
