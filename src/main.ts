@@ -1,5 +1,11 @@
-import { Plugin, Workspace, WorkspaceLeaf } from "obsidian";
-import type { AppWindow, ExtendedWorkspace } from "./types";
+import {
+  Plugin,
+  PopoverSuggest,
+  Scope,
+  SuggestModal,
+  WorkspaceLeaf,
+} from "obsidian";
+import type { AppWindow } from "./types";
 import {
   DEFAULT_SETTINGS,
   QuickOpenSettings,
@@ -13,35 +19,20 @@ import {
   removeModTransition,
 } from "./utils";
 
-type NumberKey = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-
-function isNumberKey(k: string): k is NumberKey {
-  return k.length === 1 && k >= "1" && k <= "9";
-}
-
 export default class QuickOpen extends Plugin {
   public settings: QuickOpenSettings;
-  private modalObserver: MutationObserver;
   private activeModal: HTMLElement | null = null;
-  private popoutWindows: Set<Window> = new Set();
-  private modalKeyListener?: (ev: KeyboardEvent) => void;
   private isModifierKeyPressed: boolean = false;
   private modifierKeyListener: (ev: KeyboardEvent) => void;
-  private modalKeyWindow?: Window;
+  private modalScopeStack: Map<any, Scope> = new Map();
+  private popoverScopeStack: Map<any, Scope> = new Map();
+  private popoutWindows: Set<AppWindow> = new Set();
 
   async onload() {
+    (window as any).quickOpenPlugin = this;
     await this.loadSettings();
 
     this.addSettingTab(new QuickOpenSettingTab(this.app, this));
-
-    this.modalObserver = new MutationObserver(
-      this.handleDOMMutation.bind(this),
-    );
-
-    this.modalObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
 
     this.registerEvent(
       this.app.workspace.on(
@@ -56,7 +47,195 @@ export default class QuickOpen extends Plugin {
     document.addEventListener("keydown", this.modifierKeyListener);
     document.addEventListener("keyup", this.modifierKeyListener);
 
-    this.checkForActiveModal();
+    this.patchSuggestModal();
+    this.patchPopoverSuggest();
+  }
+
+  private patchSuggestModal() {
+    const self = this;
+    const origOpen = SuggestModal.prototype.open;
+    const origClose = SuggestModal.prototype.close;
+
+    SuggestModal.prototype.open = function (...args: any[]) {
+      try {
+        origOpen.apply(this, args);
+
+        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
+        if (pluginInstance) {
+          pluginInstance.activeModal = this.modalEl;
+          pluginInstance.updateModalModifierClass();
+        }
+
+        if (self.modalScopeStack.has(this)) {
+          const oldScope = self.modalScopeStack.get(this);
+          if (oldScope) {
+            this.app.keymap.popScope(oldScope);
+          }
+        }
+
+        const modalScope = new Scope(this.scope);
+        self.modalScopeStack.set(this, modalScope);
+
+        for (let i = 1; i <= 9; i++) {
+          modalScope.register(["Mod"], i.toString(), (evt) => {
+            evt.preventDefault();
+            const idx = i - 1;
+            if (!this.chooser?.values || idx >= this.chooser.values.length)
+              return;
+            this.chooser.setSelectedItem(idx, evt);
+            this.chooser.useSelectedItem?.(evt) ??
+              this.onChooseItem?.(this.chooser.values[idx], evt);
+          });
+        }
+
+        this.app.keymap.pushScope(modalScope);
+      } catch (error) {
+        console.error("QuickOpen: Error in SuggestModal.open:", error);
+      }
+    };
+
+    SuggestModal.prototype.close = function (...args: any[]) {
+      try {
+        const scope = self.modalScopeStack.get(this);
+        if (scope) {
+          this.app.keymap.popScope(scope);
+          self.modalScopeStack.delete(this);
+        }
+
+        origClose.apply(this, args);
+
+        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
+        if (pluginInstance) {
+          pluginInstance.activeModal = null;
+          removeModStyles(document);
+        }
+      } catch (error) {
+        console.error("QuickOpen: Error in SuggestModal.close:", error);
+        const scope = self.modalScopeStack.get(this);
+        if (scope) {
+          try {
+            this.app.keymap.popScope(scope);
+          } catch (e) {
+            console.error("QuickOpen: Failed to pop scope:", e);
+          }
+          self.modalScopeStack.delete(this);
+        }
+      }
+    };
+  }
+
+  private patchPopoverSuggest() {
+    const self = this;
+    const origPopoverOpen = PopoverSuggest.prototype.open;
+    const origPopoverClose = PopoverSuggest.prototype.close;
+
+    PopoverSuggest.prototype.open = function (...args: any[]) {
+      try {
+        origPopoverOpen.apply(this, args);
+
+        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
+        if (pluginInstance) {
+          pluginInstance.activeModal = this.suggestEl;
+          pluginInstance.updateModalModifierClass();
+        }
+
+        if (this.suggestions.values.length < 1) return;
+
+        if (self.popoverScopeStack.has(this)) {
+          const oldScope = self.popoverScopeStack.get(this);
+          if (oldScope) {
+            this.app.keymap.popScope(oldScope);
+          }
+        }
+
+        const popoverScope = new Scope(this.scope);
+        self.popoverScopeStack.set(this, popoverScope);
+
+        for (let i = 1; i <= 9; i++) {
+          popoverScope.register(["Mod"], i.toString(), (evt) => {
+            evt.preventDefault();
+            let idx = i - 1;
+            if (this.suggestEl.classList.contains("mod-search-suggestion")) {
+              idx = idx + 1;
+            }
+            if (!this.suggestions || idx >= this.suggestions.length) return;
+
+            this.suggestions.setSelectedItem(idx);
+            if (this.suggestions.useSelectedItem) {
+              this.suggestions.useSelectedItem(evt);
+            } else if (this.suggestions.chooser.selectSuggestion) {
+              this.suggestions.chooser.selectSuggestion(this.suggestions[idx]);
+            }
+          });
+        }
+
+        this.app.keymap.pushScope(popoverScope);
+      } catch (error) {
+        console.error("QuickOpen: Error in PopoverSuggest.open:", error);
+      }
+    };
+
+    PopoverSuggest.prototype.close = function (...args: any[]) {
+      try {
+        const scope = self.popoverScopeStack.get(this);
+        if (scope) {
+          this.app.keymap.popScope(scope);
+          self.popoverScopeStack.delete(this);
+        }
+
+        origPopoverClose.apply(this, args);
+
+        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
+        if (pluginInstance) {
+          pluginInstance.activeModal = null;
+          removeModStyles(document);
+        }
+      } catch (error) {
+        console.error("QuickOpen: Error in PopoverSuggest.close:", error);
+        const scope = self.popoverScopeStack.get(this);
+        if (scope) {
+          try {
+            this.app.keymap.popScope(scope);
+          } catch (e) {
+            console.error("QuickOpen: Failed to pop scope:", e);
+          }
+          self.popoverScopeStack.delete(this);
+        }
+      }
+    };
+  }
+
+  onunload() {
+    for (const [_, scope] of this.modalScopeStack) {
+      try {
+        this.app.keymap.popScope(scope);
+      } catch (error) {
+        console.warn(
+          "QuickOpen: Failed to pop modal scope during unload:",
+          error,
+        );
+      }
+    }
+    this.modalScopeStack.clear();
+
+    for (const [_, scope] of this.popoverScopeStack) {
+      try {
+        this.app.keymap.popScope(scope);
+      } catch (error) {
+        console.warn(
+          "QuickOpen: Failed to pop popover scope during unload:",
+          error,
+        );
+      }
+    }
+    this.popoverScopeStack.clear();
+
+    removeModTransition(document, this.settings.transitionStyle);
+
+    if (this.modifierKeyListener) {
+      document.removeEventListener("keydown", this.modifierKeyListener);
+      document.removeEventListener("keyup", this.modifierKeyListener);
+    }
   }
 
   async loadSettings() {
@@ -71,7 +250,6 @@ export default class QuickOpen extends Plugin {
     const isModifierEvent = event[this.settings.modifierKey];
     if (this.isModifierKeyPressed !== isModifierEvent) {
       this.isModifierKeyPressed = isModifierEvent;
-
       if (this.activeModal) {
         this.updateModalModifierClass();
       }
@@ -91,13 +269,13 @@ export default class QuickOpen extends Plugin {
     }
   }
 
-  handleLayoutChange() {
+  private handleLayoutChange() {
     this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
       const bodyEl = leaf.view.containerEl.closest("body");
-      if (bodyEl?.classList.contains("is-popout-window")) {
-        const win = bodyEl.ownerDocument.defaultView as
-          | (Window & typeof globalThis)
-          | null;
+      if (!bodyEl) return;
+
+      if (bodyEl.classList.contains("is-popout-window")) {
+        const win = bodyEl.ownerDocument.defaultView as AppWindow | null;
         if (win && isAppWindow(win) && !this.popoutWindows.has(win)) {
           this.initializePopoutWindow(win);
         }
@@ -105,156 +283,16 @@ export default class QuickOpen extends Plugin {
     });
   }
 
-  initializePopoutWindow(win: AppWindow) {
+  private initializePopoutWindow(win: AppWindow) {
     this.popoutWindows.add(win);
-
-    const popoutModalObserver = new MutationObserver(
-      this.handleDOMMutation.bind(this),
-    );
-    popoutModalObserver.observe(win.document.body, {
-      childList: true,
-      subtree: true,
-    });
 
     win.addEventListener("keydown", this.modifierKeyListener);
     win.addEventListener("keyup", this.modifierKeyListener);
 
-    if (this.settings.stackTabsInPopout) {
-      this.setStackedTabsForPopoutWindow(win.app.workspace);
-    }
-
     this.register(() => {
-      popoutModalObserver.disconnect();
       win.removeEventListener("keydown", this.modifierKeyListener);
       win.removeEventListener("keyup", this.modifierKeyListener);
       this.popoutWindows.delete(win);
     });
-  }
-
-  setStackedTabsForPopoutWindow(workspace: Workspace) {
-    const extendedWorkspace = workspace as ExtendedWorkspace;
-    extendedWorkspace.onLayoutReady(() => {
-      if (extendedWorkspace.floatingSplit) {
-        extendedWorkspace.floatingSplit.children.forEach((split) => {
-          split.children.forEach((leaf) => {
-            const type = leaf.children[0].view.getViewType();
-            if (type !== "outline") leaf.setStacked(true);
-          });
-        });
-      }
-    });
-  }
-
-  handleDOMMutation(mutations: MutationRecord[]) {
-    for (const mutation of mutations) {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLElement) {
-          if (
-            node.classList.contains("modal-container") ||
-            node.classList.contains("suggestion-container")
-          ) {
-            this.handleModalOpen(node);
-          }
-        }
-      });
-
-      mutation.removedNodes.forEach((node) => {
-        if (node instanceof HTMLElement) {
-          if (
-            node.classList.contains("modal-container") ||
-            node.classList.contains("suggestion-container")
-          ) {
-            this.handleModalClosed(node);
-          }
-        }
-      });
-    }
-  }
-
-  handleModalOpen(modalElement: HTMLElement) {
-    this.activeModal = modalElement;
-
-    this.modalKeyListener = (ev: KeyboardEvent) => this.interceptModalKeys(ev);
-    this.modalKeyWindow = modalElement.ownerDocument.defaultView!;
-
-    this.modalKeyWindow.addEventListener(
-      "keydown",
-      this.modalKeyListener,
-      true,
-    );
-
-    if (this.isModifierKeyPressed) {
-      this.updateModalModifierClass();
-    }
-  }
-
-  handleModalClosed(modalElement: HTMLElement) {
-    if (this.activeModal !== modalElement) return;
-
-    removeModStyles(modalElement.ownerDocument);
-    this.activeModal = null;
-
-    if (this.modalKeyListener && this.modalKeyWindow)
-      this.modalKeyWindow.removeEventListener(
-        "keydown",
-        this.modalKeyListener,
-        true,
-      );
-
-    this.modalKeyListener = undefined;
-    this.modalKeyWindow = undefined;
-  }
-
-  private interceptModalKeys(ev: KeyboardEvent) {
-    if (!ev[this.settings.modifierKey]) return;
-    if (!isNumberKey(ev.key)) return;
-
-    ev.preventDefault();
-    ev.stopImmediatePropagation();
-
-    const idx = Number(ev.key) - 1;
-
-    const resultsContainer = this.activeModal?.querySelector(
-      ".suggestion, .prompt-results",
-    );
-    if (!resultsContainer) return;
-
-    const items = Array.from(
-      resultsContainer.querySelectorAll<HTMLElement>(
-        ".suggestion-item:not(.mod-group)",
-      ),
-    ).slice(0, 9);
-    const el = items[idx];
-    if (el) el.click();
-  }
-
-  checkForActiveModal() {
-    const modalElement = document.querySelector(
-      ".modal-container, .suggestion-container",
-    );
-    if (modalElement instanceof HTMLElement) {
-      this.handleModalOpen(modalElement);
-    }
-  }
-
-  onunload() {
-    this.modalObserver.disconnect();
-
-    removeModTransition(document, this.settings.transitionStyle);
-
-    document.removeEventListener("keydown", this.modifierKeyListener);
-    document.removeEventListener("keyup", this.modifierKeyListener);
-
-    this.popoutWindows.forEach((win) => {
-      win.removeEventListener("keydown", this.modifierKeyListener);
-      win.removeEventListener("keyup", this.modifierKeyListener);
-    });
-
-    if (this.modalKeyListener && this.modalKeyWindow)
-      this.modalKeyWindow.removeEventListener(
-        "keydown",
-        this.modalKeyListener,
-        true,
-      );
   }
 }

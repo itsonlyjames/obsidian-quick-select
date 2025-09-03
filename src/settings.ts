@@ -4,13 +4,11 @@ import QuickOpen from "./main";
 type modOptions = "metaKey" | "ctrlKey" | "altKey";
 export type transitionOptions = "none" | "fade" | "slide" | "permanent";
 export interface QuickOpenSettings {
-  stackTabsInPopout: boolean;
   modifierKey: modOptions;
   transitionStyle: transitionOptions;
 }
 
 export const DEFAULT_SETTINGS: QuickOpenSettings = {
-  stackTabsInPopout: true,
   modifierKey: "metaKey",
   transitionStyle: "slide",
 };
@@ -72,7 +70,6 @@ export class QuickOpenSettingTab extends PluginSettingTab {
           })
           .setValue(this.plugin.settings.transitionStyle)
           .onChange(async (value: transitionOptions) => {
-            console.log(document.body.classList);
             document.body.classList.forEach((className) => {
               if (/^quick-select-transition-/.test(className)) {
                 document.body.classList.remove(className);
@@ -80,20 +77,6 @@ export class QuickOpenSettingTab extends PluginSettingTab {
             });
             document.body.classList.add(`quick-select-transition-${value}`);
             this.plugin.settings.transitionStyle = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    containerEl.createEl("h2", { text: "Miscellaneous" });
-
-    new Setting(containerEl)
-      .setName("Stack tabs in popout windows")
-      .setDesc("Enable or disable stacked tabs for popout windows")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.stackTabsInPopout)
-          .onChange(async (value) => {
-            this.plugin.settings.stackTabsInPopout = value;
             await this.plugin.saveSettings();
           }),
       );
