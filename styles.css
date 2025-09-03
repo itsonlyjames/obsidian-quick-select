@@ -1,3 +1,8 @@
+body {
+	--quick-select-initial: var(--size-4-1);
+	--quick-select-inset: var(--size-4-2);
+}
+
 .suggestion-item {
 	display: flex;
 	justify-content: start;
@@ -10,6 +15,7 @@
 
 .suggestion-item:nth-child(-n+9 of :not(.mod-group)) {
 	counter-increment: suggestion-counter;
+	position: relative;
 }
 
 .suggestion-item .suggestion-content {
@@ -24,14 +30,14 @@
 	margin-left: auto;
 	align-self: center;
 	position: absolute;
-	right: var(--size-4-5);
+	right: var(--quick-select-inset);
 	background-color: var(--background-primary-alt);
 	border-radius: 4px;
 	opacity: 0;
 }
 
 .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
-	right: var(--size-4-2);
+	right: var(--quick-select-initial);
 }
 
 /* None */
@@ -44,7 +50,7 @@
 	position: relative;
 	opacity: 1;
 	right: 0;
-	margin-left: var(--size-4-2);
+	margin-left: var(--quick-select-initial);
 	padding: 0;
 	background-color: transparent;
 }
@@ -57,21 +63,21 @@
 
 .quick-select-transition-slide.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	transition: all 200ms ease-in;
-	right: var(--size-4-5);
+	right: var(--quick-select-inset);
 }
 
 .quick-select-transition-slide.quick-select-mod-key-active .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
-	right: var(--size-4-2);
+	right: var(--quick-select-initial);
 }
 
 /* Fade */
 .quick-select-transition-fade .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
 	opacity: 0;
-	right: var(--size-4-5);
+	right: var(--quick-select-inset);
 }
 
 .quick-select-transition-fade .suggestion-container .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
-	right: var(--size-4-2);
+	right: var(--quick-select-initial);
 }
 
 .quick-select-transition-fade.quick-select-mod-key-active .suggestion-item:nth-child(-n+9 of :not(.mod-group))::after {
