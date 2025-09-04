@@ -24,7 +24,8 @@ export default class QuickOpen extends Plugin {
   public settings: QuickOpenSettings;
   private activeModal: HTMLElement | null = null;
   private isModifierKeyPressed: boolean = false;
-  private modifierKeyListener: (ev: KeyboardEvent) => void;
+  private modifierKeyListener = (ev: KeyboardEvent) =>
+    this.handleModifierKeyChange(ev);
   private modalScopeStack: Map<any, Scope> = new Map();
   private popoverScopeStack: Map<any, Scope> = new Map();
   private popoutWindows: Set<AppWindow> = new Set();
@@ -49,7 +50,6 @@ export default class QuickOpen extends Plugin {
 
     addModTransition(document, this.settings.transitionStyle);
 
-    this.modifierKeyListener = this.handleModifierKeyChange.bind(this);
     document.addEventListener("keydown", this.modifierKeyListener);
     document.addEventListener("keyup", this.modifierKeyListener);
 
@@ -259,6 +259,8 @@ export default class QuickOpen extends Plugin {
     SuggestModal.prototype.close = this.origSuggestClose;
     PopoverSuggest.prototype.open = this.origPopoverOpen;
     PopoverSuggest.prototype.close = this.origPopoverClose;
+
+    delete (window as any).quickOpenPlugin;
   }
 
   async loadSettings() {
