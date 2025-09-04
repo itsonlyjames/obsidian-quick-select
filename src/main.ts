@@ -29,6 +29,11 @@ export default class QuickOpen extends Plugin {
   private popoverScopeStack: Map<any, Scope> = new Map();
   private popoutWindows: Set<AppWindow> = new Set();
 
+  private origSuggestOpen = SuggestModal.prototype.open;
+  private origSuggestClose = SuggestModal.prototype.close;
+  private origPopoverOpen = PopoverSuggest.prototype.open;
+  private origPopoverClose = PopoverSuggest.prototype.close;
+
   async onload() {
     (window as any).quickOpenPlugin = this;
     await this.loadSettings();
@@ -54,12 +59,10 @@ export default class QuickOpen extends Plugin {
 
   private patchSuggestModal() {
     const self = this;
-    const origOpen = SuggestModal.prototype.open;
-    const origClose = SuggestModal.prototype.close;
 
     SuggestModal.prototype.open = function (...args: any[]) {
       try {
-        origOpen.apply(this, args);
+        self.origSuggestOpen.apply(this, args);
 
         const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
         if (pluginInstance) {
@@ -107,7 +110,7 @@ export default class QuickOpen extends Plugin {
           self.modalScopeStack.delete(this);
         }
 
-        origClose.apply(this, args);
+        self.origSuggestClose.apply(this, args);
 
         const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
         if (pluginInstance) {
@@ -131,12 +134,10 @@ export default class QuickOpen extends Plugin {
 
   private patchPopoverSuggest() {
     const self = this;
-    const origPopoverOpen = PopoverSuggest.prototype.open;
-    const origPopoverClose = PopoverSuggest.prototype.close;
 
     PopoverSuggest.prototype.open = function (...args: any[]) {
       try {
-        origPopoverOpen.apply(this, args);
+        self.origPopoverOpen.apply(this, args);
 
         const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
         if (pluginInstance) {
@@ -200,7 +201,7 @@ export default class QuickOpen extends Plugin {
           self.popoverScopeStack.delete(this);
         }
 
-        origPopoverClose.apply(this, args);
+        self.origPopoverClose.apply(this, args);
 
         const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
         if (pluginInstance) {
@@ -253,6 +254,11 @@ export default class QuickOpen extends Plugin {
       document.removeEventListener("keydown", this.modifierKeyListener);
       document.removeEventListener("keyup", this.modifierKeyListener);
     }
+
+    SuggestModal.prototype.open = this.origSuggestOpen;
+    SuggestModal.prototype.close = this.origSuggestClose;
+    PopoverSuggest.prototype.open = this.origPopoverOpen;
+    PopoverSuggest.prototype.close = this.origPopoverClose;
   }
 
   async loadSettings() {
