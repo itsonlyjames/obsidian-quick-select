@@ -1,5 +1,5 @@
 import {
-    Modifier,
+  Modifier,
   Plugin,
   PopoverSuggest,
   Scope,
@@ -78,15 +78,19 @@ export default class QuickOpen extends Plugin {
         self.modalScopeStack.set(this, modalScope);
 
         for (let i = 1; i <= 9; i++) {
-          modalScope.register([self.getKeymapModifier()], i.toString(), (evt) => {
-            evt.preventDefault();
-            const idx = i - 1;
-            if (!this.chooser?.values || idx >= this.chooser.values.length)
-              return;
-            this.chooser.setSelectedItem(idx, evt);
-            this.chooser.useSelectedItem?.(evt) ??
-              this.onChooseItem?.(this.chooser.values[idx], evt);
-          });
+          modalScope.register(
+            [self.getKeymapModifier()],
+            i.toString(),
+            (evt) => {
+              evt.preventDefault();
+              const idx = i - 1;
+              if (!this.chooser?.values || idx >= this.chooser.values.length)
+                return;
+              this.chooser.setSelectedItem(idx, evt);
+              this.chooser.useSelectedItem?.(evt) ??
+                this.onChooseItem?.(this.chooser.values[idx], evt);
+            },
+          );
         }
 
         this.app.keymap.pushScope(modalScope);
@@ -152,22 +156,34 @@ export default class QuickOpen extends Plugin {
         const popoverScope = new Scope(this.scope);
         self.popoverScopeStack.set(this, popoverScope);
 
-        for (let i = 1; i <= 9; i++) {
-          popoverScope.register([self.getKeymapModifier()], i.toString(), (evt) => {
-            evt.preventDefault();
-            let idx = i - 1;
-            if (this.suggestEl.classList.contains("mod-search-suggestion")) {
-              idx = idx + 1;
-            }
-            if (!this.suggestions || idx >= this.suggestions.length) return;
+        const indexMap = this.suggestions.values
+          .map((v: any, i: number) => ({ i, v }))
+          .filter(({ v }: { v: any }) => v.type !== "group")
+          .map(({ i }: { i: number }) => i);
 
-            this.suggestions.setSelectedItem(idx);
-            if (this.suggestions.useSelectedItem) {
-              this.suggestions.useSelectedItem(evt);
-            } else if (this.suggestions.chooser.selectSuggestion) {
-              this.suggestions.chooser.selectSuggestion(this.suggestions[idx]);
-            }
-          });
+        for (let i = 1; i <= 9; i++) {
+          popoverScope.register(
+            [self.getKeymapModifier()],
+            i.toString(),
+            (evt) => {
+              evt.preventDefault();
+              let idx = i - 1;
+              const realIdx = indexMap[idx];
+
+              if (realIdx == null) return;
+
+              if (!this.suggestions || idx >= this.suggestions.length) return;
+
+              this.suggestions.setSelectedItem(realIdx);
+              if (this.suggestions.useSelectedItem) {
+                this.suggestions.useSelectedItem(evt);
+              } else if (this.suggestions.chooser.selectSuggestion) {
+                this.suggestions.chooser.selectSuggestion(
+                  this.suggestions[idx],
+                );
+              }
+            },
+          );
         }
 
         this.app.keymap.pushScope(popoverScope);
