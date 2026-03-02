@@ -9,10 +9,6 @@ body {
 	align-items: center;
 }
 
-.suggestion-item .suggestion-highlight {
-	line-height: 100%;
-}
-
 .suggestion-item:nth-child(-n+9 of :not(.mod-group)) {
 	counter-increment: suggestion-counter;
 	position: relative;
