@@ -25,12 +25,12 @@ export class QuickOpenSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h1", { text: "Quick Select Settings" });
+    new Setting(containerEl).setName("Quick Select Settings").setHeading();
 
     const keyDisplay = containerEl.createSpan();
     keyDisplay.setText(" (press key)");
 
-    document.addEventListener("keydown", (event) => {
+    activeDocument.addEventListener("keydown", (event) => {
       if (event.metaKey || event.ctrlKey || event.altKey)
         keyDisplay.setText(event.key);
     });
@@ -70,12 +70,12 @@ export class QuickOpenSettingTab extends PluginSettingTab {
           })
           .setValue(this.plugin.settings.transitionStyle)
           .onChange(async (value: transitionOptions) => {
-            document.body.classList.forEach((className) => {
+            activeDocument.body.classList.forEach((className) => {
               if (/^quick-select-transition-/.test(className)) {
-                document.body.classList.remove(className);
+                activeDocument.body.classList.remove(className);
               }
             });
-            document.body.classList.add(`quick-select-transition-${value}`);
+            activeDocument.body.classList.add(`quick-select-transition-${value}`);
             this.plugin.settings.transitionStyle = value;
             await this.plugin.saveSettings();
           }),

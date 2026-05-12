@@ -20,23 +20,59 @@ import {
   removeModTransition,
 } from "./utils";
 
+interface WindowWithPlugin extends Window {
+  quickOpenPlugin?: QuickOpen;
+}
+
+interface SuggestModalInternal {
+  app: { keymap: { pushScope: (s: Scope) => void; popScope: (s: Scope) => void } };
+  modalEl: HTMLElement;
+  scope: Scope;
+  chooser?: {
+    values?: unknown[];
+    length?: number;
+    setSelectedItem: (idx: number, evt: KeyboardEvent) => void;
+    useSelectedItem?: (evt: KeyboardEvent) => void;
+  };
+  onChooseItem?: (value: unknown, evt: KeyboardEvent) => void;
+}
+
+interface PopoverSuggestInternal {
+  app: { keymap: { pushScope: (s: Scope) => void; popScope: (s: Scope) => void } };
+  suggestEl: HTMLElement;
+  scope: Scope;
+  suggestions: {
+    values: Array<{ type?: string }>;
+    setSelectedItem: (idx: number) => void;
+    useSelectedItem?: (evt: KeyboardEvent) => void;
+    chooser?: {
+      selectSuggestion?: (v: unknown) => void;
+    };
+    [key: number]: unknown;
+  };
+}
+
 export default class QuickOpen extends Plugin {
   public settings: QuickOpenSettings;
-  private activeModal: HTMLElement | null = null;
+  public activeModal: HTMLElement | null = null;
   private isModifierKeyPressed: boolean = false;
-  private modifierKeyListener = (ev: KeyboardEvent) =>
+  private modifierKeyListener = (ev: KeyboardEvent): void =>
     this.handleModifierKeyChange(ev);
-  private modalScopeStack: Map<any, Scope> = new Map();
-  private popoverScopeStack: Map<any, Scope> = new Map();
+  private modalScopeStack: Map<object, Scope> = new Map();
+  private popoverScopeStack: Map<object, Scope> = new Map();
   private popoutWindows: Set<AppWindow> = new Set();
 
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   private origSuggestOpen = SuggestModal.prototype.open;
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   private origSuggestClose = SuggestModal.prototype.close;
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   private origPopoverOpen = PopoverSuggest.prototype.open;
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   private origPopoverClose = PopoverSuggest.prototype.close;
 
   async onload() {
-    (window as any).quickOpenPlugin = this;
+    (window as WindowWithPlugin).quickOpenPlugin = this;
     await this.loadSettings();
 
     this.addSettingTab(new QuickOpenSettingTab(this.app, this));
@@ -48,41 +84,46 @@ export default class QuickOpen extends Plugin {
       ),
     );
 
-    addModTransition(document, this.settings.transitionStyle);
+    addModTransition(activeDocument, this.settings.transitionStyle);
 
-    document.addEventListener("keydown", this.modifierKeyListener);
-    document.addEventListener("keyup", this.modifierKeyListener);
+    activeDocument.addEventListener("keydown", this.modifierKeyListener);
+    activeDocument.addEventListener("keyup", this.modifierKeyListener);
 
     this.patchSuggestModal();
     this.patchPopoverSuggest();
   }
 
   private patchSuggestModal() {
-    const self = this;
+    const origOpen = this.origSuggestOpen;
+    const origClose = this.origSuggestClose;
+    const { modalScopeStack } = this;
+    const getModifier = (): Modifier => this.getKeymapModifier();
+    const setActiveModal = (el: HTMLElement): void => {
+      this.activeModal = el;
+      this.updateModalModifierClass();
+    };
+    const clearActiveModal = (): void => {
+      this.activeModal = null;
+    };
 
-    SuggestModal.prototype.open = function (...args: any[]) {
+    SuggestModal.prototype.open = function (this: SuggestModalInternal) {
       try {
-        self.origSuggestOpen.apply(this, args);
+        origOpen.call(this as unknown as SuggestModal<unknown>);
 
-        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
-        if (pluginInstance) {
-          pluginInstance.activeModal = this.modalEl;
-          pluginInstance.updateModalModifierClass();
-        }
+        const plugin = (window as WindowWithPlugin).quickOpenPlugin;
+        if (plugin) setActiveModal(this.modalEl);
 
-        if (self.modalScopeStack.has(this)) {
-          const oldScope = self.modalScopeStack.get(this);
-          if (oldScope) {
-            this.app.keymap.popScope(oldScope);
-          }
+        if (modalScopeStack.has(this as object)) {
+          const oldScope = modalScopeStack.get(this as object);
+          if (oldScope) this.app.keymap.popScope(oldScope);
         }
 
         const modalScope = new Scope(this.scope);
-        self.modalScopeStack.set(this, modalScope);
+        modalScopeStack.set(this as object, modalScope);
 
         for (let i = 1; i <= 9; i++) {
           modalScope.register(
-            [self.getKeymapModifier()],
+            [getModifier()],
             i.toString(),
             (evt) => {
               evt.preventDefault();
@@ -90,8 +131,11 @@ export default class QuickOpen extends Plugin {
               if (!this.chooser?.values || idx >= this.chooser.values.length)
                 return;
               this.chooser.setSelectedItem(idx, evt);
-              this.chooser.useSelectedItem?.(evt) ??
+              if (this.chooser.useSelectedItem) {
+                this.chooser.useSelectedItem(evt);
+              } else {
                 this.onChooseItem?.(this.chooser.values[idx], evt);
+              }
             },
           );
         }
@@ -102,83 +146,86 @@ export default class QuickOpen extends Plugin {
       }
     };
 
-    SuggestModal.prototype.close = function (...args: any[]) {
+    SuggestModal.prototype.close = function (this: SuggestModalInternal) {
       try {
-        const scope = self.modalScopeStack.get(this);
+        const scope = modalScopeStack.get(this as object);
         if (scope) {
           this.app.keymap.popScope(scope);
-          self.modalScopeStack.delete(this);
+          modalScopeStack.delete(this as object);
         }
 
-        self.origSuggestClose.apply(this, args);
+        origClose.call(this as unknown as SuggestModal<unknown>);
 
-        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
-        if (pluginInstance) {
-          pluginInstance.activeModal = null;
-          removeModStyles(document);
+        const plugin = (window as WindowWithPlugin).quickOpenPlugin;
+        if (plugin) {
+          clearActiveModal();
+          removeModStyles(activeDocument);
         }
       } catch (error) {
         console.error("QuickOpen: Error in SuggestModal.close:", error);
-        const scope = self.modalScopeStack.get(this);
+        const scope = modalScopeStack.get(this as object);
         if (scope) {
           try {
             this.app.keymap.popScope(scope);
           } catch (e) {
             console.error("QuickOpen: Failed to pop scope:", e);
           }
-          self.modalScopeStack.delete(this);
+          modalScopeStack.delete(this as object);
         }
       }
     };
   }
 
   private patchPopoverSuggest() {
-    const self = this;
+    const origOpen = this.origPopoverOpen;
+    const origClose = this.origPopoverClose;
+    const { popoverScopeStack } = this;
+    const getModifier = (): Modifier => this.getKeymapModifier();
+    const setActiveModal = (el: HTMLElement): void => {
+      this.activeModal = el;
+      this.updateModalModifierClass();
+    };
+    const clearActiveModal = (): void => {
+      this.activeModal = null;
+    };
 
-    PopoverSuggest.prototype.open = function (...args: any[]) {
+    PopoverSuggest.prototype.open = function (this: PopoverSuggestInternal) {
       try {
-        self.origPopoverOpen.apply(this, args);
+        origOpen.call(this as unknown as PopoverSuggest<unknown>);
 
-        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
-        if (pluginInstance) {
-          pluginInstance.activeModal = this.suggestEl;
-          pluginInstance.updateModalModifierClass();
-        }
+        const plugin = (window as WindowWithPlugin).quickOpenPlugin;
+        if (plugin) setActiveModal(this.suggestEl);
 
         if (this.suggestions.values.length < 1) return;
 
-        if (self.popoverScopeStack.has(this)) {
-          const oldScope = self.popoverScopeStack.get(this);
-          if (oldScope) {
-            this.app.keymap.popScope(oldScope);
-          }
+        if (popoverScopeStack.has(this as object)) {
+          const oldScope = popoverScopeStack.get(this as object);
+          if (oldScope) this.app.keymap.popScope(oldScope);
         }
 
         const popoverScope = new Scope(this.scope);
-        self.popoverScopeStack.set(this, popoverScope);
+        popoverScopeStack.set(this as object, popoverScope);
 
         const indexMap = this.suggestions.values
-          .map((v: any, i: number) => ({ i, v }))
-          .filter(({ v }: { v: any }) => v.type !== "group")
-          .map(({ i }: { i: number }) => i);
+          .map((v, i: number) => ({ i, v }))
+          .filter(({ v }) => v.type !== "group")
+          .map(({ i }) => i);
 
         for (let i = 1; i <= 9; i++) {
           popoverScope.register(
-            [self.getKeymapModifier()],
+            [getModifier()],
             i.toString(),
             (evt) => {
               evt.preventDefault();
-              let idx = i - 1;
+              const idx = i - 1;
               const realIdx = indexMap[idx];
 
               if (realIdx == null) return;
 
-              if (!this.suggestions || idx >= this.suggestions.length) return;
-
               this.suggestions.setSelectedItem(realIdx);
               if (this.suggestions.useSelectedItem) {
                 this.suggestions.useSelectedItem(evt);
-              } else if (this.suggestions.chooser.selectSuggestion) {
+              } else if (this.suggestions.chooser?.selectSuggestion) {
                 this.suggestions.chooser.selectSuggestion(
                   this.suggestions[idx],
                 );
@@ -193,38 +240,38 @@ export default class QuickOpen extends Plugin {
       }
     };
 
-    PopoverSuggest.prototype.close = function (...args: any[]) {
+    PopoverSuggest.prototype.close = function (this: PopoverSuggestInternal) {
       try {
-        const scope = self.popoverScopeStack.get(this);
+        const scope = popoverScopeStack.get(this as object);
         if (scope) {
           this.app.keymap.popScope(scope);
-          self.popoverScopeStack.delete(this);
+          popoverScopeStack.delete(this as object);
         }
 
-        self.origPopoverClose.apply(this, args);
+        origClose.call(this as unknown as PopoverSuggest<unknown>);
 
-        const pluginInstance = (window as any).quickOpenPlugin as QuickOpen;
-        if (pluginInstance) {
-          pluginInstance.activeModal = null;
-          removeModStyles(document);
+        const plugin = (window as WindowWithPlugin).quickOpenPlugin;
+        if (plugin) {
+          clearActiveModal();
+          removeModStyles(activeDocument);
         }
       } catch (error) {
         console.error("QuickOpen: Error in PopoverSuggest.close:", error);
-        const scope = self.popoverScopeStack.get(this);
+        const scope = popoverScopeStack.get(this as object);
         if (scope) {
           try {
             this.app.keymap.popScope(scope);
           } catch (e) {
             console.error("QuickOpen: Failed to pop scope:", e);
           }
-          self.popoverScopeStack.delete(this);
+          popoverScopeStack.delete(this as object);
         }
       }
     };
   }
 
   onunload() {
-    for (const [_, scope] of this.modalScopeStack) {
+    for (const [, scope] of this.modalScopeStack) {
       try {
         this.app.keymap.popScope(scope);
       } catch (error) {
@@ -236,7 +283,7 @@ export default class QuickOpen extends Plugin {
     }
     this.modalScopeStack.clear();
 
-    for (const [_, scope] of this.popoverScopeStack) {
+    for (const [, scope] of this.popoverScopeStack) {
       try {
         this.app.keymap.popScope(scope);
       } catch (error) {
@@ -248,11 +295,11 @@ export default class QuickOpen extends Plugin {
     }
     this.popoverScopeStack.clear();
 
-    removeModTransition(document, this.settings.transitionStyle);
+    removeModTransition(activeDocument, this.settings.transitionStyle);
 
     if (this.modifierKeyListener) {
-      document.removeEventListener("keydown", this.modifierKeyListener);
-      document.removeEventListener("keyup", this.modifierKeyListener);
+      activeDocument.removeEventListener("keydown", this.modifierKeyListener);
+      activeDocument.removeEventListener("keyup", this.modifierKeyListener);
     }
 
     SuggestModal.prototype.open = this.origSuggestOpen;
@@ -260,7 +307,7 @@ export default class QuickOpen extends Plugin {
     PopoverSuggest.prototype.open = this.origPopoverOpen;
     PopoverSuggest.prototype.close = this.origPopoverClose;
 
-    delete (window as any).quickOpenPlugin;
+    delete (window as WindowWithPlugin).quickOpenPlugin;
   }
 
   async loadSettings() {
@@ -271,7 +318,7 @@ export default class QuickOpen extends Plugin {
     await this.saveData(this.settings);
   }
 
-  private handleModifierKeyChange(event: KeyboardEvent) {
+  private handleModifierKeyChange(event: KeyboardEvent): void {
     const isModifierEvent = event[this.settings.modifierKey];
     if (this.isModifierKeyPressed !== isModifierEvent) {
       this.isModifierKeyPressed = isModifierEvent;
@@ -281,10 +328,10 @@ export default class QuickOpen extends Plugin {
     }
   }
 
-  private updateModalModifierClass() {
+  public updateModalModifierClass(): void {
     if (this.activeModal) {
       if (this.isModifierKeyPressed) {
-        setTimeout(() => {
+        activeWindow.setTimeout(() => {
           if (this.activeModal && this.isModifierKeyPressed)
             addModStyles(this.activeModal.ownerDocument);
         }, 150);
@@ -294,7 +341,7 @@ export default class QuickOpen extends Plugin {
     }
   }
 
-  private handleLayoutChange() {
+  private handleLayoutChange(): void {
     this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
       const bodyEl = leaf.view.containerEl.closest("body");
       if (!bodyEl) return;
@@ -308,7 +355,7 @@ export default class QuickOpen extends Plugin {
     });
   }
 
-  private initializePopoutWindow(win: AppWindow) {
+  private initializePopoutWindow(win: AppWindow): void {
     this.popoutWindows.add(win);
 
     win.addEventListener("keydown", this.modifierKeyListener);
