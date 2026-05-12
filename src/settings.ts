@@ -25,7 +25,7 @@ export class QuickOpenSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName("Quick Select Settings").setHeading();
+    new Setting(containerEl).setHeading();
 
     const keyDisplay = containerEl.createSpan();
     keyDisplay.setText(" (press key)");

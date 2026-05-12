@@ -1,7 +1,7 @@
 {
 	"id": "quick-open",
 	"name": "Quick Select",
-	"version": "1.5.2",
+	"version": "1.5.3",
 	"minAppVersion": "0.15.0",
 	"description": "Quickly select items in any modal using keyboard shortcuts. Supercharge your workflow with fast, efficient item selection.",
 	"author": "James Alexandre",

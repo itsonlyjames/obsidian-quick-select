@@ -62,13 +62,13 @@ export default class QuickOpen extends Plugin {
   private popoverScopeStack: Map<object, Scope> = new Map();
   private popoutWindows: Set<AppWindow> = new Set();
 
-  // eslint-disable-next-line @typescript-eslint/unbound-method
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- stored unbound intentionally; restored on unload via prototype reassignment
   private origSuggestOpen = SuggestModal.prototype.open;
-  // eslint-disable-next-line @typescript-eslint/unbound-method
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- stored unbound intentionally; restored on unload via prototype reassignment
   private origSuggestClose = SuggestModal.prototype.close;
-  // eslint-disable-next-line @typescript-eslint/unbound-method
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- stored unbound intentionally; restored on unload via prototype reassignment
   private origPopoverOpen = PopoverSuggest.prototype.open;
-  // eslint-disable-next-line @typescript-eslint/unbound-method
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- stored unbound intentionally; restored on unload via prototype reassignment
   private origPopoverClose = PopoverSuggest.prototype.close;
 
   async onload() {
@@ -331,7 +331,7 @@ export default class QuickOpen extends Plugin {
   public updateModalModifierClass(): void {
     if (this.activeModal) {
       if (this.isModifierKeyPressed) {
-        activeWindow.setTimeout(() => {
+        window.setTimeout(() => {
           if (this.activeModal && this.isModifierKeyPressed)
             addModStyles(this.activeModal.ownerDocument);
         }, 150);
