@@ -1,50 +1,88 @@
-<div style="text-align:center;">
+<div align="center">
 
-[![.github/workflows/release.yml](https://github.com/itsonlyjames/obsidian-quick-select/actions/workflows/release.yml/badge.svg)](https://github.com/itsonlyjames/obsidian-quick-select/actions/workflows/release.yml)
+[![Build obsidian plugin](https://github.com/itsonlyjames/obsidian-quick-select/actions/workflows/release.yml/badge.svg)](https://github.com/itsonlyjames/obsidian-quick-select/actions/workflows/release.yml)
 
-<h1>Obsidian Quick Select</h1>
+# Obsidian Quick Select
+
+Pick any item in any Obsidian list with <kbd>Mod</kbd> + number. No arrow keys, no mouse.
 
 </div>
-
-<p style="text-align:center;">Open any Obsidian modal and press <kbd>Mod</kbd> + number</kbd> to quickly open that file/execute that command/select that tag/choose that suggestion!</p>
 
 ![Quick Select: hold Mod to reveal numbers, then press Mod + number to pick an item](docs/hero.gif)
 
 [Watch in full quality (MP4)](docs/hero.mp4)
 
-## Supercharge Your Workflow!
+## How it works
 
-![Supercharge your workflow](docs/supercharge-your-workflow.gif)
+1. Open any picker: the quick switcher, command palette, search, a tag or link suggestion, or a slash command.
+2. Hold <kbd>Mod</kbd>. The first nine items are numbered.
+3. Press <kbd>Mod</kbd> + a number to choose that item.
 
-Quick Select works in all Obsidian modals including: the quick switcher, command palette (including all subsequent modals), slash command, search, even tags and alias!
+<kbd>Mod</kbd> is <kbd>Command</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. You can change it in the settings.
 
-### Examples:
+## Works everywhere
 
-#### Quick Select Tags (Frontmatter/Inline)
+Quick Select works in every Obsidian modal and suggestion list, including the ones that open from other modals.
 
-![Quick Select Tags (Frontmatter/Inline)](docs/quick-select-tags.gif)
+### Quick switcher and command palette
 
-#### Quick Select Search Items
+![Quick Select in the quick switcher and command palette](docs/supercharge-your-workflow.gif)
 
-![Quick Select Search Items](docs/quick-select-search.gif)
+### Tags (frontmatter and inline)
 
-#### Hot Swap Workspaces
+![Quick Select picking a tag suggestion](docs/quick-select-tags.gif)
 
-![Supercharge your workflow—Workspaces](docs/supercharge-your-workflow-workspaces.gif)
+### Search options and history
 
-#### Quick Select Slash Commands
+![Quick Select picking a search option](docs/quick-select-search.gif)
 
-![Supercharge your slash commands](docs/supercharge-your-slash-commands.gif)
+### Workspaces
 
-And much more...
+![Quick Select swapping workspaces](docs/supercharge-your-workflow-workspaces.gif)
 
----
+### Split panes
 
-### Mod Key Usage
+![Quick Select splitting panes from the command palette](docs/supercharge-your-workflow-panes.gif)
 
-- MacOS: <kbd>Command</kbd> + number
-- Windows + Linux: <kbd>Ctrl</kbd> + number
+### Slash commands
 
----
+![Quick Select picking a slash command](docs/supercharge-your-slash-commands.gif)
 
-This project is licensed under the terms of the MIT license.
+## Settings
+
+| Setting                      | Options                                     | Default |
+| ---------------------------- | ------------------------------------------- | ------- |
+| **Modifier key**             | Meta, Control, Alt                          | Meta    |
+| **Counter transition style** | None, Fade, Slide, Permanent (always shown) | Slide   |
+
+## Installation
+
+### From Community Plugins
+
+1. Open **Settings → Community plugins**.
+2. Turn off **Restricted mode** if prompted.
+3. Click **Browse** and search for "Quick Select".
+4. Click **Install**, then **Enable**.
+
+### Manual installation
+
+1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/itsonlyjames/obsidian-quick-select/releases/latest).
+2. Copy them into `<your vault>/.obsidian/plugins/quick-open/`.
+3. Reload Obsidian and enable **Quick Select** under **Settings → Community plugins**.
+
+## Compatibility
+
+Works on desktop and mobile, including popout windows. Requires Obsidian 0.15.0 or later.
+
+## Related plugins
+
+- [Fold Properties](https://github.com/itsonlyjames/obsidian-fold-properties) folds the properties of a note, a folder or your whole vault in one click.
+- [Sync Folds](https://github.com/itsonlyjames/obsidian-sync-folds) keeps your fold states in sync across devices.
+
+## Support
+
+If Quick Select speeds up your day, consider [sponsoring its development](https://github.com/sponsors/itsonlyjames).
+
+## License
+
+[MIT](LICENSE.txt)
