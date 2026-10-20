@@ -8,6 +8,10 @@
 
 <p style="text-align:center;">Open any Obsidian modal and press <kbd>Mod</kbd> + number</kbd> to quickly open that file/execute that command/select that tag/choose that suggestion!</p>
 
+![Quick Select: hold Mod to reveal numbers, then press Mod + number to pick an item](docs/hero.gif)
+
+[Watch in full quality (MP4)](docs/hero.mp4)
+
 ## Supercharge Your Workflow!
 
 ![Supercharge your workflow](docs/supercharge-your-workflow.gif)
