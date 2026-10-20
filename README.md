@@ -10,8 +10,6 @@ Pick any item in any Obsidian list with <kbd>Mod</kbd> + number. No arrow keys, 
 
 ![Quick Select: hold Mod to reveal numbers, then press Mod + number to pick an item](docs/hero.gif)
 
-[Watch in full quality (MP4)](docs/hero.mp4)
-
 ## How it works
 
 1. Open any picker: the quick switcher, command palette, search, a tag or link suggestion, or a slash command.
